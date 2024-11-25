@@ -1,0 +1,6 @@
+"0","# Instantiate the model"
+"0","model <- build_model()"
+"2","Error in py_call_impl(callable, call_args$unnamed, call_args$named) : 
+  ValueError: Argument(s) not recognized: {'lr': 0.001}
+[90mRun ]8;;rstudio:run:reticulate::py_last_error()`reticulate::py_last_error()`]8;; for details.[39m
+"

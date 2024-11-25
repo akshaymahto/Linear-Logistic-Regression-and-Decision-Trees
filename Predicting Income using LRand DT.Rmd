@@ -1,0 +1,343 @@
+---
+title: "Predicting Income using LR and DT"
+author: "akshay"
+date: "2024-10-21"
+output: html_document
+---
+
+```
+1. (0.3 points) Load “adult.data” into a dataframe in R. Note that “adult.data” does not have
+column names in the first line, so you need to set header=FALSE when you read the data and
+then manually set the column names. Inspect the dataset using str and summary functions.
+For each variable in the dataset, is it numeric or categorical? And for each categorical variable
+explain whether it is nominal or ordinal.
+```
+```{r}
+# Load necessary library
+library(dplyr)
+
+# Load the dataset, replacing " ?" with NA
+adult_data <- read.csv("/Users/apple/desktop/ML Assignment 3/adult.data", header = FALSE, na.strings = " ?")
+
+# Set the column names
+colnames(adult_data) <- c("age", "workclass", "fnlwgt", "education", "education-num",
+                           "marital-status", "occupation", "relationship", "race", 
+                           "sex", "capital-gain", "capital-loss", "hours-per-week", 
+                           "native-country", "income")
+
+# Convert character variables to factors
+char_columns <- sapply(adult_data, is.character)
+adult_data[char_columns] <- lapply(adult_data[char_columns], as.factor)
+
+# Recode the income variable (correct levels)
+adult_data$income <- factor(adult_data$income, levels = c(" <=50K", " >50K"), labels = c("0", "1"))
+# Inspect the dataset
+str(adult_data)  # Check structure
+summary(adult_data)  # Summary statistics
+
+```
+
+
+```
+2. (0.1 points) There are some missing values in this dataset represented as “ ?” (Note: there
+is a space before ?). Make sure that all “ ?” are converted to NAs. You can do so by setting
+“na.strings” parameters in read.csv to “ ?”.
+```
+
+```{r}
+# all " ?" are converted to NAs in previous step. Load the adult_data <- read.csv("/Users/apple/desktop/ML Assignment 3/adult.data", header = FALSE, na.strings = " ?"). Total missing values are present 4262
+colSums(is.na(adult_data))  # Count missing values in each column
+```
+
+```
+
+3.(0.1 points) Set the random seed, and split the data to train/test. Use 80% of samples for
+training and the remaining 20% for testing. You can use sample (see what we did in week 6
+decision tree code demo train sample < −sample(1000, 800), but you need to adjust 1000 and
+800 according to the size of your dataset). Alternatively, you can use createDataPartition
+method from caret package.
+```
+
+
+```{r}
+library(caret)
+set.seed(123)  # For reproducibility
+train_index <- createDataPartition(adult_data$income, p = 0.8, list = FALSE)
+train_data <- adult_data[train_index, ]
+test_data <- adult_data[-train_index, ]
+```
+
+
+```
+4. (0.5 points) Read the section on “Handling Missing Data” in chapter 13 of the
+textbook “Machine Learning with R”. Find which columns/variables in the train and test
+set have missing values. Then decide about how you want to impute the missing values in these
+columns. Explain why you chose this imputation approach (Pay attention to data leakage!).
+```
+
+```{r}
+print(colSums(is.na(train_data)))
+print(colSums(is.na(test_data)))
+
+# Impute missing values using mode for categorical variables
+impute_mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+for(col in colnames(train_data)) {
+  if(is.factor(train_data[[col]])) {
+    mode_value <- impute_mode(train_data[[col]])
+    train_data[[col]][is.na(train_data[[col]])] <- mode_value
+    test_data[[col]][is.na(test_data[[col]])] <- mode_value
+  }
+}
+```
+
+```
+5. (0.5 points) The variable “native-country” is sparse, meaning it has too many levels, with some
+levels occurring infrequently. Most machine learning algorithms do not work well with sparse
+data. One-hot-encoding or dummy coding of these variables will increase feature dimensions
+significantly and typically some preprocessing is required to reduce the number of levels. One
+approach based on frequency is to group together the levels which occur infrequently. For
+instance, one could combine together countries with less than 0.1% occurrence in the data to an
+“other” category. Another possibility is to use domain knowledge; for instance, combine
+countries based on their geographic location ( “Middle East”, “East-Europe”, “West-Europe”,
+etc. Please read the section on Making use of sparse data (remapping sparse cate-
+gorical data) in chapter 13 of the textbook “Machine learning with R”. Then combine
+1
+some of the infrequent levels of the native-country. You can decide whether you want to combine
+the levels based on frequency or domain knowledge. Either one is fine for this assignment but
+preference will be with a choice that would increase the cross validation performance of the ML
+models you will train subsequently. (You do not need to choose the better one, this last sentence
+is just for your knowledge on how to determine the better strategy here!)
+
+```
+
+```{r}
+library(dplyr)
+library(forcats)
+
+# Check the levels of native_country
+unique(train_data$native_country)
+
+# Use fct_lump carefully, ensuring it includes enough levels
+train_data$native_country <- fct_lump(train_data$native_country, prop = 0.001)  # Check the proportion used
+
+```
+
+```
+6. (0.5 points) Use appropriate plots and statistic tests to find which variables in the dataset are
+associated with “income”. Remove the variable(s) that are not associated with income. You can
+check the Bivariate analysis table at the end of this assignment.
+```
+
+```{r}
+# Use bar plots to check associations with 'income'
+library(ggplot2)
+
+# Example: Check association with workclass
+ggplot(train_data, aes(x = workclass, fill = income)) +
+  geom_bar(position = "fill") +
+  labs(y = "Proportion") +
+  theme_minimal()
+
+# Use statistical tests as appropriate (e.g., Chi-Square)
+chisq_test <- chisq.test(table(train_data$workclass, train_data$income))
+print(chisq_test)
+
+```
+
+```
+7. (0.5 points) Train a logistic regression model on the train data (preprocessed and transformed
+using above steps) using the glm package and use it to predict “income” for the test data. Note:
+As explained in the lectures, “predict” method will return predicted probabilities of being positive
+(Note: you can check which level is positive by using levels(your response variable) in R, the
+positive class is typically the second level in your response factor. For example, if the output
+is Output: [1] “Down” “Up”, then “Up” is positive). To convert them to labels, you need to
+use some threshold (typically set as 50%) and if the predicted probability is greater than 50%
+you predict the positive class; otherwise predict the negative class (please review the example in
+week 8 code demo)
+```
+
+```{r}
+# Check column names of train_data
+colnames(train_data)
+
+# Check column names of test_data
+colnames(test_data)
+
+# Load necessary libraries
+library(dplyr)
+
+# Check column names to confirm the correct name for native-country
+colnames(train_data)
+colnames(test_data)
+
+# Step 1: Define a function to replace infrequent levels
+combine_infrequent_levels <- function(data, threshold) {
+  # Use the correct column name here
+  native_counts <- table(data$`native-country`)  # Ensure backticks if there are spaces
+  infrequent_levels <- names(native_counts[native_counts < threshold])
+  
+  # Replace infrequent levels with "Other"
+  data$`native-country`[data$`native-country` %in% infrequent_levels] <- "Other"
+  data$`native-country` <- as.factor(data$`native-country`)  # Convert to factor again
+  return(data)
+}
+
+# Set frequency threshold
+frequency_threshold <- 0.001 * nrow(train_data)  # 0.1% occurrence threshold
+
+# Step 2: Apply the function to both training and test datasets
+train_data <- combine_infrequent_levels(train_data, frequency_threshold)
+test_data <- combine_infrequent_levels(test_data, frequency_threshold)
+
+# Step 3: Ensure factor levels match
+test_data$`native-country` <- factor(test_data$`native-country`, levels = levels(train_data$`native-country`))
+
+# Step 4: Proceed with training the model
+logistic_model <- glm(income ~ ., data = train_data, family = binomial)
+
+# Predict on the test data
+predicted_probs <- predict(logistic_model, newdata = test_data, type = "response")
+
+# Convert probabilities to labels
+predicted_labels <- ifelse(predicted_probs > 0.5, ">50K", "<=50K")
+
+# Create a confusion matrix to evaluate the model
+confusion_matrix <- table(Predicted = predicted_labels, Actual = ifelse(test_data$income == 1, ">50K", "<=50K"))
+print(confusion_matrix)
+
+
+```
+```
+8. (0.5 points) Get the cross table between the predicted labels and true labels in the test data
+and compute the total error.
+```
+```{r}
+# Create confusion matrix
+confusion_matrix <- table(predicted = predicted_labels, actual = test_data$income)
+total_error <- 1 - sum(diag(confusion_matrix)) / sum(confusion_matrix)
+confusion_matrix
+total_error
+
+```
+
+```{r}
+# Separate the training data by income class
+over_50k <- train_data[train_data$income == ">50K", ]
+under_50k <- train_data[train_data$income == "<=50K", ]
+
+# Down-sample the majority class to match the size of the minority class
+set.seed(123)
+under_50k_sample <- under_50k[sample(nrow(under_50k), nrow(over_50k)), ]
+
+# Combine the two datasets to create a balanced training set
+balanced_train_data <- rbind(over_50k, under_50k_sample)
+
+# Re-train the logistic regression model on balanced data
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+
+# Predict on the original test data
+balanced_predicted_probs <- predict(logistic_model, test_data, type = "response")
+balanced_predicted_labels <- ifelse(balanced_predicted_probs > 0.5, ">50K", "<=50K")
+
+# Evaluate balanced model performance
+balanced_confusion_matrix <- table(balanced_predicted_labels, test_data$income)
+print(balanced_confusion_matrix)
+
+# Compute the total error for balanced model
+balanced_total_error <- sum(balanced_predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Balanced Model Total Error: ", balanced_total_error))
+
+```
+
+```
+9. (0.5 points) The target variable “income” is imbalanced; the number of adults who make
+<=50K is three times more than the number of adults who make >50K. Most classification mod-
+els trained on imbalanced data are biased towards predicting the majority class (income<=50K
+in this case) and yield a higher classification error on the minority class (income >50K).
+One way to deal with class imbalance problem is to down-sample the majority class; meaning
+randomly sample the observations in the majority class to make it the same size as the minority
+class. The downside of this approach is that for smaller datasets, removing data will result in
+significant loss of information and lower performance. Later, we will learn about other techniques
+to deal with data imbalance without removing information, but for this assignment, we use down-
+sampling in an attempt to address data imbalance.
+Note: Down-sampling should only be done on the training data and the test data
+should have the original imbalance distribution. You can downsample as follows:
+– Divide your training data into two sets, adults who make <=50K and the ones who make
+>50K.
+– Suppose that the >50K set has m elements. Take a sample of size m from the <=50K set.
+You can use “sample” from the base package to sample the rows. Alternatively, you can
+use the method “sample n” from “dplyr” package to directly sample the dataframe.
+– Combine the above sample with the >50K set. You can use “rbind” function to combine
+the rows in two or more dataframes. This will give you a balanced training data with the
+same observations in >50K and <=50K classes.
+– Re-train the logistic regression model on the balanced training data and evaluate it on the
+test data. Compare the total error. Which model does better in terms of total error?
+```
+```{r}
+library(partykit)
+library(C50)
+
+# Check if C50_model can be trained without errors
+tryCatch({
+  C50_model <- C5.0(income ~ ., data = balanced_train_data, trials = 30)
+}, error = function(e) {
+  print(paste("Error in model training:", e$message))
+})
+
+# Predict on the test data
+C50_predicted_labels <- predict(C50_model, test_data)  # corrected variable name
+
+# Evaluate C5.0 model performance
+C50_confusion_matrix <- table(C50_predicted_labels, test_data$income)
+print(C50_confusion_matrix)
+
+# Compute the total error for C5.0 model
+C50_total_error <- sum(C50_predicted_labels != test_data$income) / nrow(test_data)
+print(paste("C5.0 Model Total Error: ", C50_total_error))
+
+```
+```{r}
+library(C50)
+
+# Train C5.0 model on the original training data
+C50_model <- C5.0(income ~ ., data = train_data, trials = 30)
+
+# Predict on test data
+C50_pred_labels <- predict(C50_model, test_data)
+
+# Evaluate C5.0 model performance
+C50_confusion_matrix <- table(C50_pred_labels, test_data$income)
+print("C5.0 Model Confusion Matrix:")
+print(C50_confusion_matrix)
+
+# Compute the total error for C5.0 model
+C50_total_error <- sum(C50_pred_labels != test_data$income) / nrow(test_data)
+print(paste("C5.0 Model Total Error: ", C50_total_error))
+
+# Train C5.0 model on the balanced training data
+balanced_C50_model <- C5.0(income ~ ., data = balanced_train_data, trials = 30)
+
+# Predict on test data using the balanced model
+balanced_C50_pred_labels <- predict(balanced_C50_model, test_data)
+
+# Evaluate balanced C5.0 model performance
+balanced_C50_confusion_matrix <- table(balanced_C50_pred_labels, test_data$income)
+print("Balanced C5.0 Model Confusion Matrix:")
+print(balanced_C50_confusion_matrix)
+
+# Compute the total error for balanced C5.0 model
+balanced_C50_total_error <- sum(balanced_C50_pred_labels != test_data$income) / nrow(test_data)
+print(paste("Balanced C5.0 Model Total Error: ", balanced_C50_total_error))
+
+# Compare all models
+print("Model Comparison:")
+print(paste("Logistic Regression Total Error: ", logistic_total_error))
+print(paste("Balanced Logistic Regression Total Error: ", balanced_logistic_total_error))
+print(paste("C5.0 Model Total Error: ", C50_total_error))
+print(paste("Balanced C5.0 Model Total Error: ", balanced_C50_total_error))
+```
+

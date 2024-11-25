@@ -1,0 +1,5 @@
+"0","library(caret)"
+"0","set.seed(123)  # For reproducibility"
+"0","train_indices <- createDataPartition(adult_data$income, p = 0.8, list = FALSE)"
+"0","train_data <- adult_data[train_indices, ]"
+"0","test_data <- adult_data[-train_indices, ]"

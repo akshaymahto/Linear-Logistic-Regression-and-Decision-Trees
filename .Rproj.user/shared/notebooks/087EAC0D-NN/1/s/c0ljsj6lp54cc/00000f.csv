@@ -1,0 +1,7 @@
+"0","library(tensorflow)"
+"0","use_condaenv(""r-tensorflow-compatible"", required = TRUE)"
+"0",""
+"0","library(keras3)  # YOU MIGHT WANT library(keras3)"
+"0","tf$constant(""Hello, TensorFlow!"")"
+"1","tf.Tensor(b'Hello, TensorFlow!', shape=(), dtype=string)
+"

@@ -1,0 +1,15 @@
+"0","set.seed(1)"
+"0","history <- model %>% fit(concrete_train, "
+"0","  train_labels,"
+"0","  batch_size=50,"
+"0","  epochs = 500,"
+"0","  validation_data=list(concrete_test,test_labels))"
+"2","Warning in do.call(ViewMetricsCallback, args) :"
+"2","
+ "
+"2"," restarting interrupted promise evaluation
+"
+"2","Error in py_module_import(module, convert = convert) : 
+  ModuleNotFoundError: No module named 'kerastools.callback'
+[90mRun ]8;;rstudio:run:reticulate::py_last_error()`reticulate::py_last_error()`]8;; for details.[39m
+"

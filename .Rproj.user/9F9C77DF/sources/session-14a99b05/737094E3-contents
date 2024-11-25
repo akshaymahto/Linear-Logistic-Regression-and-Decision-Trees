@@ -1,0 +1,355 @@
+---
+title: "Predicting Bike Sharing Demand with Neural Networks"
+author: "Akshay Mahto"
+date: "2024-11-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```
+1. (0.4 points) Explore the overall structure of the dataset using the “str()” function. Then,
+get a summary statistics of each variable using the “summary()” function. Answer the following
+questions:
+– How many observations (examples) do you have in the data?
+– What is the type of each variable? Categorical or Numeric?
+– Is there any missing value in the data?
+– Draw the histogram of the variable “count”.
+```
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(caret)
+
+# Load the data
+bikes <- read.csv("bike.csv")
+
+# Explore data structure and summary statistics
+str(bikes)
+summary(bikes)
+
+# Check for missing values
+sum(is.na(bikes))
+
+# Plot the histogram of the target variable "count"
+ggplot(bikes, aes(x = count)) + 
+  geom_histogram(binwidth = 50, fill = "purple", color = "black") + 
+  labs(title = "Histogram of Bike Rental Counts", x = "Count", y = "Frequency")
+
+```
+```
+2. (0.1 points) Remove the “registered” and “casual” variables. These are the count of registered
+and casual users and together they can perfectly predict “count” so we are removing them from
+the model and predict count from the other features.
+```
+```{r}
+View(bikes)
+```
+
+```{r}
+# Remove 'registered' and 'casual' columns
+bikes <- bikes %>% select(-registered, -casual)
+```
+
+```
+3. (0.1 points) The “count” variable is severely right-skewed. A skewed target variable can make
+a machine learning model biased. For instance, in this case, lower counts are more frequent in
+the data compared to higher counts . Therefore, a machine learning model trained on this data
+is less likely to successfully predict higher counts. There are different ways we can transform a
+right-skewed variable to a more bell-shape distribution. Common transformations for a right-
+skewed data includes log, square-root, and cube-root transformations. We are going to use
+square root transformation to make the distribution of count more bell-shaped. Set
+the count variable in your dataframe equal to square root of count and plot its
+histogram again.
+```
+
+```{r}
+View(bikes)
+```
+
+```{r}
+# Apply square root transformation to 'count'
+bikes$count <- sqrt(bikes$count)
+
+# Plot histogram again after transformation
+ggplot(bikes, aes(x = count)) + 
+  geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+  labs(title = "Histogram of Square Root Transformed Bike Rental Counts", x = "Square Root of Count", y = "Frequency")
+
+```
+```
+4. (0.4 points) The variable of “datetime” is not useful in its current form. Convert this variable
+to several variables: “year”, “month”, “day of month”, “day of week”, and “hour”. You can use
+as.POSIXlt function to extract those features from “datetime”. Please see the following exam-
+ple. After this, remove the original “datetime” variable after conversion by setting “datetime”
+be NULL.
+
+# Sample datetime
+datetime <- as.POSIXlt("2024-11-01 12:04:17")
+
+# Extract components as numeric values
+year <- as.numeric(format(datetime, "%Y"))
+month <- as.numeric(format(datetime, "%m"))
+day_of_month <- as.numeric(format(datetime, "%d"))
+day_of_week <- as.numeric(format(datetime, "%u"))
+hour <- as.numeric(format(datetime, "%H"))
+```
+```{r}
+# Convert 'datetime' to date-time format and extract components
+bikes$datetime <- as.POSIXlt(bikes$datetime)
+bikes$year <- as.numeric(format(bikes$datetime, "%Y"))
+bikes$month <- as.numeric(format(bikes$datetime, "%m"))
+bikes$day_of_month <- as.numeric(format(bikes$datetime, "%d"))
+bikes$day_of_week <- as.numeric(format(bikes$datetime, "%u"))
+bikes$hour <- as.numeric(format(bikes$datetime, "%H"))
+
+# Remove original 'datetime' variable
+bikes$datetime <- NULL
+
+```
+
+```
+5. (0.8 points) Variables “month”, “day of week”, “hour”, and “season” are categorical but
+they are also circular. This means these variables are periodic in nature. If we represent
+a circular variable like “month” with numeric indices 0-11 we are implying that the distance
+between month 10 (November) and month 11 (December) is much closer than the distance
+between month 11(December) and month 0 (January) which is not correct. Thus, a better way
+to represent these variables is to map each value into a point in a circle where the lowest value
+appears next to the largest value in the circle. For instance, we can transform the “month i” by
+creating “month i x” and “month i y” coordinates of the point in such the circle using sine and
+cosine transformations as follows:
+month i x = cos( 2π ∗ month i
+max(month) )
+month i y = sin( 2π ∗ month i
+max(month) )
+For instance, month 10 is converted to month 10 x = cos(2π ∗10/11) and month 10 y = sin(2π ∗
+10/11).
+Convert variables “month”, “day of week”, “hour”, and “season” to their x and y coordinates
+using sine and cosine transformations as explained above. Make sure to remove the original
+“month”, “day of week”, “hour”, and “season” variables after transformation by setting them as
+NULL.
+Note: The “day of month” variable is also technically circular but this dataset only contains
+days 1-19. Therefore, we do not apply such the transformation on this variable.
+```
+```{r}
+# Transform cyclic variables using sine and cosine transformations
+bikes$month_x <- cos(2 * pi * bikes$month / 12)
+bikes$month_y <- sin(2 * pi * bikes$month / 12)
+bikes$day_of_week_x <- cos(2 * pi * bikes$day_of_week / 7)
+bikes$day_of_week_y <- sin(2 * pi * bikes$day_of_week / 7)
+bikes$hour_x <- cos(2 * pi * bikes$hour / 24)
+bikes$hour_y <- sin(2 * pi * bikes$hour / 24)
+bikes$season_x <- cos(2 * pi * bikes$season / 4)
+bikes$season_y <- sin(2 * pi * bikes$season / 4)
+
+# Remove the original cyclic variables
+bikes <- bikes %>% select(-month, -day_of_week, -hour, -season)
+
+```
+
+```
+6. (0.4 points) Encode the categorical variables before training the network. One-hot encode
+all the categorical variables in your dataset, see your previous assignment and code demo to
+see how you can do one-hot encoding for categorical variables. Note: binary variables such as
+“holiday” and “workingday” have already been converted to binary 0-1 and don’t need to be
+one-hot encoded. You can check their values to ensure they are binary. If not, you can use ifelse
+to convert them to be binary.
+```
+```{r}
+# Convert categorical variables to factors for one-hot encoding
+bikes$weather <- as.factor(bikes$weather)
+
+# One-hot encode categorical variables
+bikes <- model.matrix(~ . - 1, data = bikes) %>% as.data.frame()
+
+```
+
+```{r}
+View(bikes)
+```
+
+```
+7. (0 point) Use set.seed(2024) to set the random seed so that I can reproduce your results.
+```
+```{r}
+# Set seed for reproducibility
+set.seed(2024)
+
+# Split data into 90% train and 10% test
+inTrain <- createDataPartition(bikes$count, p = 0.9, list = FALSE)
+bikes_train <- bikes[inTrain, ]
+bikes_test <- bikes[-inTrain, ]
+
+```
+
+```
+8. (0.4 points) Use Caret’s createDataPartition method as follows to split the dataset into
+“bikes train” and “bikes test” (use 90% for training and 10% for testing).
+inTrain = createDataPartition(bikes$count, p=0.9, list=FALSE)
+bikes_train = bikes[inTrain,]
+bikes_test = bikes[-inTrain,]
+where “bikes” is the name of your pre-processed data frame. The first line creates a random 90%-
+10% split of data such that the distribution of the target variable “bikes$count” is preserved in
+each split. The “list = FALSE” option avoids returning the data as a list. Instead, “inTrain” is
+a vector of indices used to get the training and test data.
+```
+```{r}
+# Further split training data into 90% training and 10% validation
+inTrain2 <- createDataPartition(bikes_train$count, p = 0.9, list = FALSE)
+bikes_train_final <- bikes_train[inTrain2, ]
+bikes_validation <- bikes_train[-inTrain2, ]
+
+```
+
+```
+9. (0.4 points) Set.seed(2024) and further divide the “bikes train” data into 90% training and 10%
+validation using Caret’s “CreateDataPartition” function. This is for the later hyper-parameter
+tuning.
+```
+```{r}
+# Scale numeric variables in training data
+numeric_vars <- names(bikes_train_final)[sapply(bikes_train_final, is.numeric) & names(bikes_train_final) != "count"]
+scaling_params <- preProcess(bikes_train_final[, numeric_vars], method = c("center", "scale"))
+
+# Apply scaling to train, validation, and test sets
+bikes_train_final[, numeric_vars] <- predict(scaling_params, bikes_train_final[, numeric_vars])
+bikes_validation[, numeric_vars] <- predict(scaling_params, bikes_validation[, numeric_vars])
+bikes_test[, numeric_vars] <- predict(scaling_params, bikes_test[, numeric_vars])
+```
+
+```
+10. (0.4 points) Scale the numeric variables in the training data (except for the target variable,
+“count”). Use the column means and column standard deviations from the training data to scale
+both the validation and test data (see code demo of week 10). Note: You should NOT scale the
+categorical variables (one-hot-encoded or binary) in the data.
+```
+```{r}
+# Scaling function
+scale_data <- function(train_data, validation_data, test_data, exclude_col) {
+  numeric_cols <- sapply(train_data, is.numeric)
+  numeric_cols[exclude_col] <- FALSE
+  
+  # Compute means and sds on training data
+  means <- colMeans(train_data[, numeric_cols])
+  sds <- apply(train_data[, numeric_cols], 2, sd)
+  
+  # Scale data
+  train_data[, numeric_cols] <- scale(train_data[, numeric_cols], center = means, scale = sds)
+  validation_data[, numeric_cols] <- scale(validation_data[, numeric_cols], center = means, scale = sds)
+  test_data[, numeric_cols] <- scale(test_data[, numeric_cols], center = means, scale = sds)
+  
+  list(train = train_data, validation = validation_data, test = test_data)
+}
+
+# Assuming 'count' is the target column
+scaled_data <- scale_data(bikes_train_final, bikes_validation, bikes_test, exclude_col = "count")
+bikes_train_final <- scaled_data$train
+bikes_validation <- scaled_data$validation
+bikes_test <- scaled_data$test
+
+```
+
+```
+11. (1.6 points) In this part, we want to build a two-hidden layer neural network to predict the
+total counts of bike rentals, fine-tune the hyper-parameters of this model, and find the best set
+of hyper-parameters that can give us the best validation performance.
+Specifically, we create an R script and name it “bike model.R”. In this script, we define a set of
+flags for hyper-parameters we want to tune, including
+– the number of nodes in hidden layer 1
+– the number of nodes in hidden layer 2
+– the activation functions
+– the batch size
+– the learning rate
+Then, we build, compile, and fit the model as usual. You might want to see a concrete example
+in the code demo of week 10 (“fashion mnist.R”).
+After setting this script, go back to your original R notebook, run “tuning run” from “tfruns”
+package to fine-tune the above hyper-parameters. As for the candidate values of your hyper-
+parameters, you can determine based on your preference, and you can check one concrete example
+in the code demo of week 10.
+Finally, print the returned value from “tuning run” to see the metrics for each run. Which run
+(which hyper-parameter combination) gives the best mean squared error on the validation set?
+And print the learning curve for your best model. You can just take a screenshot of the learning
+curve of your best model and submit it with the rest of your files.
+Note: The “fit” function in keras does not accept a dataframe and only takes a matrix. If you
+want to pass a dataframe as training or validation data to the fit function, you must first use
+“as.matrix” function to convert it to matrix before passing it to the fit function; for example,
+“as.matrix(your training dataframe)” or “as.matrix(your validation dataframe)”.
+```
+
+```{r}
+library(keras3)
+library(tfruns)
+
+# Define hyperparameter flags
+FLAGS <- flags(
+  flag_integer("nodes1", 64),
+  flag_integer("nodes2", 32),
+  flag_string("activation", "relu"),
+  flag_integer("batch_size", 32),
+  flag_numeric("learning_rate", 0.001)
+)
+
+# Define the model-building function
+build_model <- function() {
+  model <- keras_model_sequential() %>%
+    layer_dense(units = FLAGS$nodes1, activation = FLAGS$activation, input_shape = ncol(bikes_train_final) - 1) %>%
+    layer_dense(units = FLAGS$nodes2, activation = FLAGS$activation) %>%
+    layer_dense(units = 1)
+  
+  model %>% compile(
+    optimizer = optimizer_adam(lr = FLAGS$learning_rate),
+    loss = "mse"
+  )
+  
+  return(model)
+}
+```
+
+```{r}
+# Instantiate the model
+model <- build_model()
+
+# Data preparation: Ensure these are matrices for keras
+x_train <- as.matrix(bikes_train_final[, -which(names(bikes_train_final) == "count")])
+y_train <- bikes_train_final$count
+x_validation <- as.matrix(bikes_validation[, -which(names(bikes_validation) == "count")])
+y_validation <- bikes_validation$count
+
+# Fit the model
+history <- model %>% fit(
+  x = x_train,          # Correct matrix input
+  y = y_train,          # Correct target vector
+  epochs = 100,
+  batch_size = FLAGS$batch_size,
+  validation_data = list(x_validation, y_validation),
+  verbose = 1
+)
+
+
+```
+

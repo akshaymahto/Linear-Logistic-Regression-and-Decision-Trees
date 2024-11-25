@@ -1,0 +1,26 @@
+"0","library(tensorflow)"
+"2","
+Attaching package: ‘tensorflow’
+
+"
+"2","The following objects are masked from ‘package:keras3’:
+
+    set_random_seed, shape
+
+"
+"2","2024-11-08 08:56:48.075653: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+"
+"2","/Users/apple/.virtualenvs/r-tensorflow/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+"
+"0","use_condaenv(""r-tensorflow-compatible"", required = TRUE)"
+"2","ERROR: The requested version of Python ('/opt/anaconda3/envs/r-tensorflow-compatible/bin/python') cannot be used, as another version of Python
+"
+"2","('/Users/apple/.virtualenvs/r-tensorflow/bin/python') has already been initialized. Please restart the R session if you need to attach
+"
+"2","reticulate to a different version of Python.
+"
+"2","Error in use_python(python, required = required) : 
+  failed to initialize requested version of Python
+"

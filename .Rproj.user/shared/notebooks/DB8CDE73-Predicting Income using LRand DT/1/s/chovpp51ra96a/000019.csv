@@ -1,0 +1,15 @@
+"0","library(dplyr)"
+"0","library(forcats)"
+"0",""
+"0","# Check the levels of native_country"
+"0","unique(train_data$native_country)"
+"1","NULL
+"
+"0","# Use fct_lump carefully, ensuring it includes enough levels"
+"0","train_data$native_country <- fct_lump(train_data$native_country, prop = 0.001)  # Check the proportion used"
+"1","[1m[33mError[39m in `fct_lump_prop()`:[22m
+[38;5;232m[33m![38;5;232m `f` must be a factor or character vector, not NULL.[39m
+Backtrace:
+[90m 1. [39m[1mforcats[22m::fct_lump(train_data$native_country, prop = 0.001)
+[90m 2. [39m[1m[94mforcats::fct_lump_prop([39m[22mf, prop, w = w, other_level = other_level[1m[94m)[39m[22m
+"

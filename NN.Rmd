@@ -1,0 +1,74 @@
+---
+title: "Neural Networks"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+```{r}
+library(tensorflow)
+use_condaenv("r-tensorflow-compatible", required = TRUE)
+
+library(keras3)  # YOU MIGHT WANT library(keras3)
+tf$constant("Hello, TensorFlow!")
+
+```
+
+NNs for regression: use an ANN to estimate the strength of concrete
+```{r}
+concrete <- read.csv("concrete.csv")
+str(concrete)
+```
+```{r}
+concrete_train <- concrete[1:773,-9]
+train_labels<-concrete[1:773,9]
+concrete_test <- concrete[774:1030,-9]
+test_labels <- concrete[774:1030,9]
+```
+
+```{r}
+concrete_train=scale(concrete_train)
+col_means_train <- attr(concrete_train, "scaled:center") 
+col_stddevs_train <- attr(concrete_train, "scaled:scale")
+
+#avoid data leakage
+concrete_test <- scale(concrete_test, center = col_means_train, scale = col_stddevs_train)
+```
+
+```{r}
+library(keras3) # YOU MIGHT WANT library(keras3)
+model <- keras_model_sequential() %>%
+  layer_dense(units = 10, activation = "relu", input_shape = c(dim(concrete_train)[2])) %>%
+  layer_dense(units = 1)
+
+# Compile the model
+model %>% compile(
+  optimizer = 'adam',
+  loss = 'mse'
+)
+
+model
+```
+```{r}
+set.seed(1)
+history <- model %>% fit(concrete_train, 
+  train_labels,
+  batch_size=50,
+  epochs = 500,
+  validation_data=list(concrete_test,test_labels))
+
+```
+
+```{r}
+plot(history)
+```
+
+```{r}
+predictions=model %>% predict(concrete_test)
+rmse= function(x,y){ 
+  return((mean((x - y)^2))^0.5)
+}
+rmse(predictions,test_labels)
+```
+

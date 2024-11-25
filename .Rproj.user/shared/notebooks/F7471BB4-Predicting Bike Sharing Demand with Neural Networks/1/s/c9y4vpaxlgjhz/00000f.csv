@@ -1,0 +1,5 @@
+"0","# Further split training data into 90% training and 10% validation"
+"0","inTrain2 <- createDataPartition(bikes_train$count, p = 0.9, list = FALSE)"
+"0","bikes_train_final <- bikes_train[inTrain2, ]"
+"0","bikes_validation <- bikes_train[-inTrain2, ]"
+"0",""

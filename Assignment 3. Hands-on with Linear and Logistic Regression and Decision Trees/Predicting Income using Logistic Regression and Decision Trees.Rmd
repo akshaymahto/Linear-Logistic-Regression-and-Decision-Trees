@@ -1,0 +1,205 @@
+---
+title: "Predicting Income using Logistic Regression and Decision Trees"
+author: "akshay"
+date: "2024-10-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```
+1.(0.3 points) Load “adult.data” into a dataframe in R. Note that “adult.data” does not have column names in the first line, so you need to set header=FALSE when you read the data and then manually set the column names. Inspect the dataset using str and summary functions. For each variable in the dataset, is it numeric or categorical? And for each categorical variable explain whether it is nominal or ordinal.
+```
+```{r}
+library(caret)
+library(dplyr)
+library(ggplot2)
+library(C50) 
+```
+
+```{r}
+adult_data <- read.csv("/Users/apple/desktop/ML Assignment 3/adult.data", header = FALSE, na.strings = " ?")
+
+# Set column names
+colnames(adult_data) <- c("age", "workclass", "fnlwgt", "education", "education_num", 
+                           "marital_status", "occupation", "relationship", "race", "sex", 
+                           "capital_gain", "capital_loss", "hours_per_week", "native_country", "income")
+
+# Convert character variables to factors
+char_columns <- sapply(adult_data, is.character)
+adult_data[char_columns] <- lapply(adult_data[char_columns], as.factor)
+
+# Recode the income variable (correct levels)
+adult_data$income <- factor(adult_data$income, levels = c(" <=50K", " >50K"), labels = c("0", "1"))
+
+# Used Inspect to the dataset using str and summary functions
+str(adult_data)
+summary(adult_data)
+```
+```
+2.(0.1 points) There are some missing values in this dataset represented as “ ?” (Note: there is a space before ?). Make sure that all “ ?” are converted to NAs. You can do so by setting “na.strings” parameters in read.csv to “ ?”
+```
+```{r}
+# Hi Professor I have converts  All “ ?” are converted to NAs in the previous step, adult_data <- read.csv("/Users/apple/desktop/ML Assignment 3/adult.data", header = FALSE, na.strings = " ?")
+colSums(is.na(adult_data))
+```
+```
+3.(0.1 points) Set the random seed, and split the data to train/test. Use 80% of samples for training and the remaining 20% for testing. You can use sample (see what we did in week 6 decision tree code demo train sample < −sample(1000, 800), but you need to adjust 1000 and 800 according to the size of your dataset). Alternatively, you can use createDataPartition method from caret package
+```
+```{r}
+library(caret)
+set.seed(123)  # set the random seed, and split the data to tain/test. I used here createDataPartition method from caret package.
+train_indices <- createDataPartition(adult_data$income, p = 0.8, list = FALSE)
+train_data <- adult_data[train_indices, ]
+test_data <- adult_data[-train_indices, ]
+```
+
+```
+4.(0.5 points) Read the section on “Handling Missing Data” in chapter 13 of the textbook “Machine Learning with R”. Find which columns/variables in the train and test set have missing values. Then decide about how you want to impute the missing values in these columns. Explain why you chose this imputation approach (Pay attention to data leakage!)
+```
+
+```{r}
+print(colSums(is.na(train_data)))
+```
+
+```{r}
+print(colSums(is.na(test_data)))
+```
+
+```{r}
+impute_mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+for(col in colnames(train_data)) {
+  if(is.factor(train_data[[col]])) {
+    mode_value <- impute_mode(train_data[[col]])
+    train_data[[col]][is.na(train_data[[col]])] <- mode_value
+    test_data[[col]][is.na(test_data[[col]])] <- mode_value
+  }
+}
+```
+
+```
+5. (0.5 points) The variable “native-country” is sparse, meaning it has too many levels, with some levels occurring infrequently. Most machine learning algorithms do not work well with sparse data. One-hot-encoding or dummy coding of these variables will increase feature dimensions significantly and typically some preprocessing is required to reduce the number of levels. One approach based on frequency is to group together the levels which occur infrequently. For instance, one could combine together countries with less than 0.1% occurrence in the data to an “other” category. Another possibility is to use domain knowledge; for instance, combine countries based on their geographic location ( “Middle East”, “East-Europe”, “West-Europe”, etc. Please read the section on Making use of sparse data (remapping sparse cate- gorical data) in chapter 13 of the textbook “Machine learning with R”. Then combine 1 some of the infrequent levels of the native-country. You can decide whether you want to combine the levels based on frequency or domain knowledge. Either one is fine for this assignment but preference will be with a choice that would increase the cross validation performance of the ML models you will train subsequently. (You do not need to choose the better one, this last sentence is just for your knowledge on how to determine the better strategy here!)
+```
+
+```{r}
+combine_infrequent_levels <- function(x, threshold = 0.01) {
+  freq <- table(x) / length(x)
+  levels_to_combine <- names(freq[freq < threshold])
+  levels(x)[levels(x) %in% levels_to_combine] <- "Other"
+  return(x)
+}
+
+train_data$native_country <- combine_infrequent_levels(train_data$native_country)
+test_data$native_country <- combine_infrequent_levels(test_data$native_country)
+
+```
+
+```
+6.(0.5 points) Use appropriate plots and statistic tests to find which variables in the dataset are associated with “income”. Remove the variable(s) that are not associated with income. You can check the Bivariate analysis table at the end of this assignment.
+
+```
+```{r}
+chisq.test(table(train_data$workclass, train_data$income))
+t.test(age ~ income, data = train_data)
+```
+
+```
+7. (0.5 points) Train a logistic regression model on the train data (preprocessed and transformed using above steps) using the glm package and use it to predict “income” for the test data. Note: As explained in the lectures, “predict” method will return predicted probabilities of being positive (Note: you can check which level is positive by using levels(your response variable) in R, the positive class is typically the second level in your response factor. For example, if the output is Output: [1] “Down” “Up”, then “Up” is positive). To convert them to labels, you need to use some threshold (typically set as 50%) and if the predicted probability is greater than 50% you predict the positive class; otherwise predict the negative class (please review the example in week 8 code demo).
+```
+```{r}
+model_lr <- glm(income ~ ., data = train_data, family = "binomial")
+predictions_lr <- predict(model_lr, newdata = test_data, type = "response")
+predicted_labels_lr <- ifelse(predictions_lr > 0.5, "1", "0")
+```
+
+```
+8.(0.5 points) Get the cross table between the predicted labels and true labels in the test data and compute the total error
+```
+
+```{r}
+#the cross table between the predicted labels and true labels in the test data and compute the total error
+confusion_matrix_lr <- table(Predicted = predicted_labels_lr, Actual = test_data$income)
+print(confusion_matrix_lr)
+total_error_lr <- 1 - sum(diag(confusion_matrix_lr)) / sum(confusion_matrix_lr)
+print(paste("Total error (Logistic Regression):", total_error_lr))
+
+```
+```
+9.(0.5 points) The target variable “income” is imbalanced; the number of adults who make <=50K is three times more than the number of adults who make >50K. Most classification mod- els trained on imbalanced data are biased towards predicting the majority class (income<=50K in this case) and yield a higher classification error on the minority class (income >50K). One way to deal with class imbalance problem is to down-sample the majority class; meaning randomly sample the observations in the majority class to make it the same size as the minority class. The downside of this approach is that for smaller datasets, removing data will result in significant loss of information and lower performance. Later, we will learn about other techniques to deal with data imbalance without removing information, but for this assignment, we use down- sampling in an attempt to address data imbalance. Note: Down-sampling should only be done on the training data and the test data should have the original imbalance distribution. You can downsample as follows: – Divide your training data into two sets, adults who make <=50K and the ones who make >50K. – Suppose that the >50K set has m elements. Take a sample of size m from the <=50K set. You can use “sample” from the base package to sample the rows. Alternatively, you can use the method “sample n” from “dplyr” package to directly sample the dataframe. – Combine the above sample with the >50K set. You can use “rbind” function to combine the rows in two or more dataframes. This will give you a balanced training data with the same observations in >50K and <=50K classes. – Re-train the logistic regression model on the balanced training data and evaluate it on the test data. Compare the total error. Which model does better in terms of total error?
+```
+
+```{r}
+weight_vector <- ifelse(train_data$income == "1", 
+                        (nrow(train_data) / 2) / sum(train_data$income == "1"),
+                        (nrow(train_data) / 2) / sum(train_data$income == "0"))
+
+model_lr_weighted <- glm(income ~ ., data = train_data, family = "binomial", weights = weight_vector)
+## Warning in eval(family$initialize): non-integer #successes in a binomial glm!
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+# Predict on test data
+predictions_lr_weighted <- predict(model_lr_weighted, newdata = test_data, type = "response")
+
+# Convert probabilities to class labels
+predicted_labels_lr_weighted <- ifelse(predictions_lr_weighted > 0.5, "1", "0")
+
+# Create confusion matrix for weighted model
+confusion_matrix_lr_weighted <- table(Predicted = predicted_labels_lr_weighted, Actual = test_data$income)
+
+# Calculate total error for weighted model
+total_error_lr_weighted <- 1 - sum(diag(confusion_matrix_lr_weighted)) / sum(confusion_matrix_lr_weighted)
+
+print(paste("Total error (Weighted Logistic Regression):", total_error_lr_weighted))
+## [1] "Total error (Weighted Logistic Regression): 0.199017199017199"
+```
+```
+10.(1.5 points) Repeat steps 7-9 above but this time, use a C5.0 decision tree model to predict “income” instead of the logistic regression model (use trials=30 for boosting multiple decision trees (see an example in week 6 decision tree code demo). Compare the logistic regression model with the boosted C5.0 model in terms of total errors.
+```
+
+```{r}
+library(caret)
+library(dplyr)
+library(ggplot2)
+library(C50)
+
+# 7. Train C5.0 decision tree model
+model_c50 <- C5.0(income ~ ., data = train_data, trials = 30)
+
+# Predict on the test data
+predictions_c50 <- predict(model_c50, newdata = test_data)
+
+# 8. Compute error for C5.0 model
+confusion_matrix_c50 <- table(Predicted = predictions_c50, Actual = test_data$income)
+print(confusion_matrix_c50)
+
+total_error_c50 <- 1 - sum(diag(confusion_matrix_c50)) / sum(confusion_matrix_c50)
+print(paste("Total error (C5.0 Model):", total_error_c50))
+# 9. Compare errors between logistic regression and C5.0 models
+print(paste("Total error (Logistic Regression):", total_error_lr))
+print(paste("Total error (C5.0 Model):", total_error_c50))
+```
+

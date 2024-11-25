@@ -1,0 +1,6 @@
+"0","concrete_train=scale(concrete_train)"
+"0","col_means_train <- attr(concrete_train, ""scaled:center"") "
+"0","col_stddevs_train <- attr(concrete_train, ""scaled:scale"")"
+"0",""
+"0","#avoid data leakage"
+"0","concrete_test <- scale(concrete_test, center = col_means_train, scale = col_stddevs_train)"

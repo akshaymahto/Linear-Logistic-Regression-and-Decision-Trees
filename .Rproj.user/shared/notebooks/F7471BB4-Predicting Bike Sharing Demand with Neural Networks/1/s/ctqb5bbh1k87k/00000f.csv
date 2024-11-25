@@ -1,0 +1,8 @@
+"0","# Scale numeric variables in training data"
+"0","numeric_vars <- names(bikes_train_final)[sapply(bikes_train_final, is.numeric) & names(bikes_train_final) != ""count""]"
+"0","scaling_params <- preProcess(bikes_train_final[, numeric_vars], method = c(""center"", ""scale""))"
+"0",""
+"0","# Apply scaling to train, validation, and test sets"
+"0","bikes_train_final[, numeric_vars] <- predict(scaling_params, bikes_train_final[, numeric_vars])"
+"0","bikes_validation[, numeric_vars] <- predict(scaling_params, bikes_validation[, numeric_vars])"
+"0","bikes_test[, numeric_vars] <- predict(scaling_params, bikes_test[, numeric_vars])"

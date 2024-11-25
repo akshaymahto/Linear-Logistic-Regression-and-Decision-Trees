@@ -1,0 +1,8 @@
+"0","# Set seed for reproducibility"
+"0","set.seed(2024)"
+"0",""
+"0","# Split data into 90% train and 10% test"
+"0","inTrain <- createDataPartition(bikes$count, p = 0.9, list = FALSE)"
+"0","bikes_train <- bikes[inTrain, ]"
+"0","bikes_test <- bikes[-inTrain, ]"
+"0",""

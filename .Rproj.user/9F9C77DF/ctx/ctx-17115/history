@@ -1,0 +1,507 @@
+install.packages("dplyr")
+install.packages("caret")
+knitr::opts_chunk$set(echo = TRUE)
+# Define column names
+column_names <- c("age", "workclass", "fnlwgt", "education", "education_num",
+"marital_status", "occupation", "relationship", "race",
+"sex", "capital_gain", "capital_loss", "hours_per_week",
+"native_country", "income")
+# Load the dataset with no headers and handle missing values (represented by ' ?')
+adult_data <- read.csv("adult.data", header=FALSE, na.strings = " ?", col.names = column_names)
+# Inspect the dataset
+str(adult_data)
+summary(adult_data)
+View(adult_data)
+# Load the dataset with no headers and handle missing values (represented by ' ?')
+adult_data <- read.csv("adult.data", header=FALSE, na.strings = " ?", col.names = column_names)
+# Inspect the dataset
+str(adult_data)
+# Inspect the dataset
+str(adult_data)
+# Inspect the dataset
+str(adult_data)
+summary(adult_data)
+# Define column names
+column_names adult_data
+# Define column names
+column_names <- adult_data
+column_names <- c("age", "workclass", "fnlwgt", "education", "education_num",
+"marital_status", "occupation", "relationship", "race",
+"sex", "capital_gain", "capital_loss", "hours_per_week",
+"native_country", "income")
+# Count missing values in each column
+sapply(adult_data, function(x) sum(is.na(x)))
+# Optionally, remove rows with missing values
+adult_data_clean <- adult_data %>% drop_na()
+# Define the column names based on the dataset description
+column_names <- c("age", "workclass", "fnlwgt", "education", "education_num",
+"marital_status", "occupation", "relationship", "race",
+"sex", "capital_gain", "capital_loss", "hours_per_week",
+"native_country", "income")
+# Load the dataset, convert " ?" to NA using na.strings parameter
+adult_data <- read.csv("adult.data", header = FALSE, col.names = column_names,
+na.strings = " ?")
+# Inspect the data to check if " ?" has been replaced by NA
+summary(adult_data)
+# Set random seed for reproducibility
+set.seed(123)
+# Create train/test split (80/20)
+train_index <- createDataPartition(adult_data_clean$income, p = 0.8, list = FALSE)
+train_data <- adult_data_clean[train_index, ]
+test_data <- adult_data_clean[-train_index, ]
+# Count missing values in each column
+sapply(adult_data, function(x) sum(is.na(x)))
+# Optionally, remove rows with missing values
+adult_data_clean <- adult_data %>% drop_na()
+# Create train/test split (80/20)
+train_index <- createDataPartition(adult_data_clean$income, p = 0.8, list = FALSE)
+# Optionally, remove rows with missing values
+adult_data_clean <- adult_data %>% drop_na()
+# Load the dataset with no headers and handle missing values (represented by ' ?')
+adult_data <- read.csv("adult.data", header=FALSE, na.strings = " ?", col.names = column_names)
+sapply(adult_data, class)
+sapply(adult_data, class)
+# Set the random seed for reproducibility
+set.seed(123)
+# Split the data (using caret's createDataPartition)
+trainIndex <- createDataPartition(adult_data$income, p = 0.8, list = FALSE)
+train_data <- adult_data[trainIndex, ]
+test_data <- adult_data[-trainIndex, ]
+# Check the dimensions of training and testing sets
+dim(train_data)
+dim(test_data)
+# Split the data (using caret's createDataPartition)
+trainIndex <- createDataPartition(adult_data$income, p = 0.8, list = FALSE)
+install.packages("caret")
+library(caret)
+# Split the data (using caret's createDataPartition)
+trainIndex <- createDataPartition(adult_data$income, p = 0.8, list = FALSE)
+train_data <- adult_data[trainIndex, ]
+test_data <- adult_data[-trainIndex, ]
+# Check the dimensions of training and testing sets
+dim(train_data)
+dim(test_data)
+# Check for missing values in the train and test datasets
+colSums(is.na(train_data))
+colSums(is.na(test_data))
+# Impute missing values using median (for numeric) or mode (for categorical)
+# For simplicity, we can use mice library or preProcess in caret
+preProcValues <- preProcess(train_data, method = c("medianImpute", "modeImpute"))
+train_data <- predict(preProcValues, train_data)
+test_data <- predict(preProcValues, test_data)
+# Check again for missing values to confirm imputation
+colSums(is.na(train_data))
+# Impute missing values using median (for numeric) or mode (for categorical)
+# For simplicity, we can use mice library or preProcess in caret
+preProcValues <- preProcess(train_data, method = c("medianImpute", "modeImpute"))
+install.packages("caret")
+knitr::opts_chunk$set(echo = TRUE)
+library(caret)
+# Impute missing values using median (for numeric) or mode (for categorical)
+# For simplicity, we can use mice library or preProcess in caret
+preProcValues <- preProcess(train_data, method = c("medianImpute", "modeImpute"))
+train_data <- predict(preProcValues, train_data)
+test_data <- predict(preProcValues, test_data)
+# Check again for missing values to confirm imputation
+colSums(is.na(train_data))
+# Impute missing values using median (for numeric) or mode (for categorical)
+# For simplicity, we can use mice library or preProcess in caret
+preProcValues <- preProcess(train_data, method = c("medianImpute", "modeImpute"))
+install.packages("caret")
+install.packages("caret")
+install.packages("dplyr")
+```{r}# Load necessary libraries
+```{r}# Load necessary libraries
+knitr::opts_chunk$set(echo = TRUE)
+# Load necessary libraries
+library(caret)
+library(dplyr)
+# Check for missing values in the train and test datasets
+colSums(is.na(train_data))
+colSums(is.na(test_data))
+# Step 1: Impute numeric variables using 'preProcess' for median imputation
+numeric_cols <- sapply(train_data, is.numeric)  # Identify numeric columns
+# Apply median imputation to numeric columns
+preProcValues <- preProcess(train_data[, numeric_cols], method = "medianImpute")
+train_data[, numeric_cols] <- predict(preProcValues, train_data[, numeric_cols])
+test_data[, numeric_cols] <- predict(preProcValues, test_data[, numeric_cols])
+# Step 2: Impute categorical variables using mode imputation
+# Define a function to calculate mode
+calculate_mode <- function(x) {
+ux <- unique(x)
+ux[which.max(tabulate(match(x, ux)))]
+}
+# Apply mode imputation to categorical columns
+categorical_cols <- sapply(train_data, function(x) is.factor(x) || is.character(x))
+for (col in names(train_data)[categorical_cols]) {
+# Impute missing values in train data
+train_data[[col]][is.na(train_data[[col]])] <- calculate_mode(train_data[[col]])
+# Impute missing values in test data (using mode from train data)
+test_data[[col]][is.na(test_data[[col]])] <- calculate_mode(train_data[[col]])
+}
+# Step 3: Check again for missing values to confirm imputation
+colSums(is.na(train_data))
+colSums(is.na(test_data))
+# Check frequency of native-country levels
+native_country_freq <- table(train_data$native_country)
+# Combine countries with less than 0.1% occurrence into "Other"
+low_freq_countries <- names(native_country_freq[native_country_freq < (0.001 * nrow(train_data))])
+train_data$native_country <- ifelse(train_data$native_country %in% low_freq_countries, "Other", train_data$native_country)
+test_data$native_country <- ifelse(test_data$native_country %in% low_freq_countries, "Other", test_data$native_country)
+# Check the transformed country data
+table(train_data$native_country)
+# Use chi-squared tests for categorical variables
+chisq.test(table(train_data$sex, train_data$income))
+chisq.test(table(train_data$marital_status, train_data$income))
+# Plot distributions
+boxplot(age ~ income, data = train_data, main = "Age vs Income")
+# Use chi-squared tests for categorical variables
+chisq.test(table(train_data$sex, train_data$income))
+chisq.test(table(train_data$marital_status, train_data$income))
+# Plot distributions
+boxplot(age ~ income, data = train_data, main = "Age vs Income")
+# Train logistic regression model (income >50K is positive)
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the test data
+predicted_probs <- predict(logistic_model, test_data, type = "response")
+# Convert probabilities to labels with threshold of 0.5
+predicted_labels <- ifelse(predicted_probs > 0.5, ">50K", "<=50K")
+# Evaluate model performance
+confusion_matrix <- table(predicted_labels, test_data$income)
+print(confusion_matrix)
+# Compute the total error
+total_error <- sum(predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Total Error: ", total_error))
+# Train logistic regression model (income >50K is positive)
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Convert the 'income' variable to a binary factor: 1 for ">50K", 0 for "<=50K"
+train_data$income <- as.factor(ifelse(train_data$income == ">50K", 1, 0))
+test_data$income <- as.factor(ifelse(test_data$income == ">50K", 1, 0))
+# Train logistic regression model (1 represents income >50K)
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Train logistic regression model (1 represents income >50K)
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the test data
+predicted_probs <- predict(logistic_model, test_data, type = "response")
+# Convert probabilities to labels with a threshold of 0.5
+predicted_labels <- ifelse(predicted_probs > 0.5, 1, 0)
+# Convert probabilities to labels with a threshold of 0.5
+predicted_labels <- ifelse(predicted_probs > 0.5, 1, 0)
+# Evaluate model performance using a confusion matrix
+confusion_matrix <- table(predicted_labels, test_data$income)
+print(confusion_matrix)
+# Compute the total error
+total_error <- sum(predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Total Error: ", total_error))
+print(confusion_matrix)
+# Compute the total error
+total_error <- sum(predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Total Error: ", total_error))
+# Convert the 'income' variable to a binary factor: 1 for ">50K", 0 for "<=50K"
+train_data$income <- as.factor(ifelse(train_data$income == ">50K", 1, 0))
+test_data$income <- as.factor(ifelse(test_data$income == ">50K", 1, 0))
+# Train logistic regression model (1 represents income >50K)
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Train logistic regression model (1 represents income >50K)
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the test data
+predicted_probs <- predict(logistic_model, test_data, type = "response")
+# Convert probabilities to labels with a threshold of 0.5
+predicted_labels <- ifelse(predicted_probs > 0.5, 1, 0)
+# Evaluate model performance using a confusion matrix
+confusion_matrix <- table(predicted_labels, test_data$income)
+# Evaluate model performance using a confusion matrix
+confusion_matrix <- table(predicted_labels, test_data$income)
+print(confusion_matrix)
+# Compute the total error
+total_error <- sum(predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Total Error: ", total_error))
+install.packages("car")
+install.packages("glmnet")
+library(car)
+library(glmnet)
+# Convert the 'income' variable to a binary factor: 1 for ">50K", 0 for "<=50K"
+train_data$income <- as.factor(ifelse(train_data$income == ">50K", 1, 0))
+test_data$income <- as.factor(ifelse(test_data$income == ">50K", 1, 0))
+# Train logistic regression model (1 represents income >50K)
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Train logistic regression model (1 represents income >50K)
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the test data
+predicted_probs <- predict(logistic_model, test_data, type = "response")
+# Predict on the test data
+predicted_probs <- predict(logistic_model, test_data, type = "response")
+# Convert probabilities to labels with a threshold of 0.5
+predicted_labels <- ifelse(predicted_probs > 0.5, 1, 0)
+# Evaluate model performance using a confusion matrix
+confusion_matrix <- table(predicted_labels, test_data$income)
+print(confusion_matrix)
+# Compute the total error
+total_error <- sum(predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Total Error: ", total_error))
+# Predict on the test data
+predicted_probs <- predict(logistic_model, test_data, type = "response")
+library(car)
+library(glmnet)
+library(caret)
+install.packages("car")
+library(car)
+library(glmnet)
+library(caret)
+# Convert the 'income' variable to a binary factor: 1 for ">50K", 0 for "<=50K"
+train_data$income <- as.factor(ifelse(train_data$income == ">50K", 1, 0))
+test_data$income <- as.factor(ifelse(test_data$income == ">50K", 1, 0))
+# Train logistic regression model (1 represents income >50K)
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Train logistic regression model (1 represents income >50K)
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the test data
+predicted_probs <- predict(logistic_model, test_data, type = "response")
+# Predict on the test data
+predicted_probs <- predict(logistic_model, test_data, type = "response")
+# Convert probabilities to labels with a threshold of 0.5
+predicted_labels <- ifelse(predicted_probs > 0.5, 1, 0)
+# Evaluate model performance using a confusion matrix
+confusion_matrix <- table(predicted_labels, test_data$income)
+print(confusion_matrix)
+# Compute the total error
+total_error <- sum(predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Total Error: ", total_error))
+install.packages("C50")
+library(C50)
+install.packages("partykit")
+library(partykit)
+library(C50)
+# Train the decision tree model using boosting (with trials = 30)
+c50_model <- C5.0(income ~ ., data = balanced_train_data, trials = 30)
+# Predict on the test data
+c50_predicted_labels <- predict(c50_model, test_data)
+# Evaluate C5.0 model performance
+c50_confusion_matrix <- table(c50_predicted_labels, test_data$income)
+print(c50_confusion_matrix)
+# Compute the total error for C5.0 model
+c50_total_error <- sum(c50_predicted_labels != test_data$income) / nrow(test_data)
+print(paste("C5.0 Model Total Error: ", c50_total_error))
+library(partykit)
+installed.packages(partkit)
+installed.packages("partykit")
+library(partykit)
+library(C50)
+# Separate the training data by income class
+over_50k <- train_data[train_data$income == ">50K", ]
+under_50k <- train_data[train_data$income == "<=50K", ]
+# Down-sample the majority class to match the size of the minority class
+set.seed(123)
+under_50k_sample <- under_50k[sample(nrow(under_50k), nrow(over_50k)), ]
+# Combine the two datasets to create a balanced training set
+balanced_train_data <- rbind(over_50k, under_50k_sample)
+# Re-train the logistic regression model on balanced data
+balanced_logistic_model <- glm(income ~ ., family = binomial, data = balanced_train_data)
+# Separate the training data by income class
+over_50k <- train_data[train_data$income == ">50K", ]
+under_50k <- train_data[train_data$income == "<=50K", ]
+# Down-sample the majority class to match the size of the minority class
+set.seed(123)
+under_50k_sample <- under_50k[sample(nrow(under_50k), nrow(over_50k)), ]
+# Combine the two datasets to create a balanced training set
+balanced_train_data <- rbind(over_50k, under_50k_sample)
+# Re-train the logistic regression model on balanced data
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the original test data
+balanced_predicted_probs <- predict(balanced_logistic_model, test_data, type = "response")
+View(under_50k_sample)
+# Separate the training data by income class
+over_50k <- train_data[train_data$income == ">50K", ]
+under_50k <- train_data[train_data$income == "<=50K", ]
+# Down-sample the majority class to match the size of the minority class
+set.seed(123)
+under_50k_sample <- under_50k[sample(nrow(under_50k), nrow(over_50k)), ]
+# Combine the two datasets to create a balanced training set
+balanced_train_data <- rbind(over_50k, under_50k_sample)
+# Re-train the logistic regression model on balanced data
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Re-train the logistic regression model on balanced data
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the original test data
+balanced_predicted_probs <- predict(balanced_logistic_model, test_data, type = "response")
+print(paste("Balanced Model Total Error: ", balanced_total_error))
+# Predict on the original test data
+balanced_predicted_probs <- predict(balanced_logistic_model, test_data, type = "response")
+# Re-train the logistic regression model on balanced data
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Re-train the logistic regression model on balanced data
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the original test data
+balanced_predicted_probs <- predict(logistic_model, test_data, type = "response")
+balanced_predicted_labels <- ifelse(balanced_predicted_probs > 0.5, ">50K", "<=50K")
+balanced_predicted_labels <- ifelse(balanced_predicted_probs > 0.5, ">50K", "<=50K")
+# Evaluate balanced model performance
+balanced_confusion_matrix <- table(balanced_predicted_labels, test_data$income)
+print(balanced_confusion_matrix)
+# Compute the total error for balanced model
+balanced_total_error <- sum(balanced_predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Balanced Model Total Error: ", balanced_total_error))
+# Re-train the logistic regression model on balanced data
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the original test data
+balanced_predicted_probs <- predict(logistic_model, test_data, type = "response")
+balanced_predicted_labels <- ifelse(balanced_predicted_probs > 0.5, ">50K", "<=50K")
+# Evaluate balanced model performance
+balanced_confusion_matrix <- table(balanced_predicted_labels, test_data$income)
+print(balanced_confusion_matrix)
+# Compute the total error for balanced model
+balanced_total_error <- sum(balanced_predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Balanced Model Total Error: ", balanced_total_error))
+# Combine the two datasets to create a balanced training set
+balanced_train_data <- rbind(over_50k, under_50k_sample)
+# Re-train the logistic regression model on balanced data
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Re-train the logistic regression model on balanced data
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the original test data
+balanced_predicted_probs <- predict(logistic_model, test_data, type = "response")
+# Predict on the original test data
+balanced_predicted_probs <- predict(logistic_model, test_data, type = "response")
+balanced_predicted_labels <- ifelse(balanced_predicted_probs > 0.5, ">50K", "<=50K")
+# Evaluate balanced model performance
+balanced_confusion_matrix <- table(balanced_predicted_labels, test_data$income)
+print(balanced_confusion_matrix)
+# Compute the total error for balanced model
+balanced_total_error <- sum(balanced_predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Balanced Model Total Error: ", balanced_total_error))
+# Separate the training data by income class
+over_50k <- train_data[train_data$income == ">50K", ]
+under_50k <- train_data[train_data$income == "<=50K", ]
+# Down-sample the majority class to match the size of the minority class
+set.seed(123)
+under_50k_sample <- under_50k[sample(nrow(under_50k), nrow(over_50k)), ]
+# Combine the two datasets to create a balanced training set
+balanced_train_data <- rbind(over_50k, under_50k_sample)
+# Re-train the logistic regression model on balanced data
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the original test data
+balanced_predicted_probs <- predict(logistic_model, test_data, type = "response")
+balanced_predicted_labels <- ifelse(balanced_predicted_probs > 0.5, ">50K", "<=50K")
+# Evaluate balanced model performance
+balanced_confusion_matrix <- table(balanced_predicted_labels, test_data$income)
+print(balanced_confusion_matrix)
+# Compute the total error for balanced model
+balanced_total_error <- sum(balanced_predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Balanced Model Total Error: ", balanced_total_error))
+library(partykit)
+library(C50)
+# Train the decision tree model using boosting (with trials = 30)
+c50_model <- C5.0(income ~ ., data = balanced_train_data, trials = 30)
+# Predict on the test data
+c50_predicted_labels <- predict(c50_model, test_data)
+# Train the decision tree model using boosting (with trials = 30)
+C50_model <- C5.0(income ~ ., data = balanced_train_data, trials = 30)
+# Predict on the test data
+C50_predicted_labels <- predict(c50_model, test_data)
+# Evaluate C5.0 model performance
+C50_confusion_matrix <- table(c50_predicted_labels, test_data$income)
+print(c50_confusion_matrix)
+# Compute the total error for C5.0 model
+C50_total_error <- sum(c50_predicted_labels != test_data$income) / nrow(test_data)
+library(partykit)
+library(C50)
+library(partykit)
+library(C50)
+# Train the decision tree model using boosting (with trials = 30)
+C50_model <- C5.0(income ~ ., data = balanced_train_data, trials = 30)
+# Predict on the test data
+C50_predicted_labels <- predict(c50_model, test_data)
+# Evaluate C5.0 model performance
+C50_confusion_matrix <- table(c50_predicted_labels, test_data$income)
+print(c50_confusion_matrix)
+# Compute the total error for C5.0 model
+C50_total_error <- sum(c50_predicted_labels != test_data$income) / nrow(test_data)
+print(paste("C5.0 Model Total Error: ", c50_total_error))
+library(car)
+library(glmnet)
+library(caret)
+# Convert the 'income' variable to a binary factor: 1 for ">50K", 0 for "<=50K"
+train_data$income <- as.factor(ifelse(train_data$income == ">50K", 1, 0))
+test_data$income <- as.factor(ifelse(test_data$income == ">50K", 1, 0))
+# Train logistic regression model (1 represents income >50K)
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the test data
+predicted_probs <- predict(logistic_model, test_data, type = "response")
+# Convert probabilities to labels with a threshold of 0.5
+predicted_labels <- ifelse(predicted_probs > 0.5, 1, 0)
+# Evaluate model performance using a confusion matrix
+confusion_matrix <- table(predicted_labels, test_data$income)
+print(confusion_matrix)
+# Compute the total error
+total_error <- sum(predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Total Error: ", total_error))
+# Separate the training data by income class
+over_50k <- train_data[train_data$income == ">50K", ]
+under_50k <- train_data[train_data$income == "<=50K", ]
+# Down-sample the majority class to match the size of the minority class
+set.seed(123)
+under_50k_sample <- under_50k[sample(nrow(under_50k), nrow(over_50k)), ]
+# Combine the two datasets to create a balanced training set
+balanced_train_data <- rbind(over_50k, under_50k_sample)
+# Re-train the logistic regression model on balanced data
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Re-train the logistic regression model on balanced data
+logistic_model <- glm(income ~ ., family = binomial, data = train_data)
+# Predict on the original test data
+balanced_predicted_probs <- predict(logistic_model, test_data, type = "response")
+balanced_predicted_labels <- ifelse(balanced_predicted_probs > 0.5, ">50K", "<=50K")
+# Evaluate balanced model performance
+balanced_confusion_matrix <- table(balanced_predicted_labels, test_data$income)
+print(balanced_confusion_matrix)
+# Compute the total error for balanced model
+balanced_total_error <- sum(balanced_predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Balanced Model Total Error: ", balanced_total_error))
+library(partykit)
+# Compute the total error for C5.0 model
+C50_total_error <- sum(c50_predicted_labels != test_data$income) / nrow(test_data)
+print(paste("C5.0 Model Total Error: ", c50_total_error))
+print(balanced_confusion_matrix)
+# Compute the total error for balanced model
+balanced_total_error <- sum(balanced_predicted_labels != test_data$income) / nrow(test_data)
+print(paste("Balanced Model Total Error: ", balanced_total_error))
+# Train the decision tree model using boosting (with trials = 30)
+C50_model <- C5.0(income ~ ., data = balanced_train_data, trials = 30)
+# Predict on the test data
+C50_predicted_labels <- predict(c50_model, test_data)
+# Evaluate C5.0 model performance
+C50_confusion_matrix <- table(c50_predicted_labels, test_data$income)
+print(c50_confusion_matrix)
+print(paste("C5.0 Model Total Error: ", c50_total_error))
+# Train the decision tree model using boosting (with trials = 30)
+C50_model <- C5.0(income ~ ., data = balanced_train_data, trials = 30)
+# Train the decision tree model using boosting (with trials = 30)
+c50_model <- C5.0(income ~ ., data = balanced_train_data, trials = 30)
+# Predict on the test data
+c50_predicted_labels <- predict(c50_model, test_data)
+# Evaluate C5.0 model performance
+c50_confusion_matrix <- table(c50_predicted_labels, test_data$income)
+print(c50_confusion_matrix)
+# Compute the total error for C5.0 model
+c50_total_error <- sum(c50_predicted_labels != test_data$income) / nrow(test_data)
+print(paste("C5.0 Model Total Error: ", c50_total_error))
+# Train the decision tree model using boosting (with trials = 30)
+C50_model <- C5.0(income ~ ., data = balanced_train_data, trials = 30)
+# Predict on the test data
+C50_predicted_labels <- predict(C50_model, test_data)  # corrected variable name
+# Check if C50_model can be trained without errors
+tryCatch({
+C50_model <- C5.0(income ~ ., data = balanced_train_data, trials = 30)
+}, error = function(e) {
+print(paste("Error in model training:", e$message))
+})
+# Predict on the test data
+C50_predicted_labels <- predict(C50_model, test_data)  # corrected variable name
+library(partykit)
+install.packages("partykit")
+library(tensorflow)
+install_tensorflow(method = "conda", envname = "r-tenserflow-compatible")
+library(tensorflow)
+library(tensorflow)install_tensorflow(method = "conda", envname = "r-tensorflow-compatible")
+library(tensorflow)
+install_tensorflow(method = "conda", envname = "r-tensorflow-compatible")
+install.packages("reticulate")

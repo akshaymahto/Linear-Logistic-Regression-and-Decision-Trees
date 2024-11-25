@@ -1,0 +1,11 @@
+"0","install.packages(""psych"")"
+"2","also installing the dependencies ‘mnormt’, ‘GPArotation’
+
+"
+"1","
+"
+"1",""
+"1","  There are binary versions available but the source versions are later"
+"1",""
+"1",":
+"

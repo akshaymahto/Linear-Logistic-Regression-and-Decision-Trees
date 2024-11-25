@@ -1,0 +1,8 @@
+"0","# Apply square root transformation to 'count'"
+"0","bikes$count <- sqrt(bikes$count)"
+"0",""
+"0","# Plot histogram again after transformation"
+"0","ggplot(bikes, aes(x = count)) + "
+"0","  geom_histogram(binwidth = 1, fill = ""purple"", color = ""black"") + "
+"0","  labs(title = ""Histogram of Square Root Transformed Bike Rental Counts"", x = ""Square Root of Count"", y = ""Frequency"")"
+"0",""

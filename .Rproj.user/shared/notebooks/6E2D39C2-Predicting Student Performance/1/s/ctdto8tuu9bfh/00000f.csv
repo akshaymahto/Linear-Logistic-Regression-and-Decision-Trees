@@ -1,0 +1,7 @@
+"0","# Set seed for reproducibility"
+"0","set.seed(2024)"
+"0",""
+"0","# Split data"
+"0","train_indices <- sample(nrow(studentperformance_data), 0.8 * nrow(studentperformance_data))"
+"0","train_data <- studentperformance_data[train_indices, ]"
+"0","test_data <- studentperformance_data[-train_indices, ]"

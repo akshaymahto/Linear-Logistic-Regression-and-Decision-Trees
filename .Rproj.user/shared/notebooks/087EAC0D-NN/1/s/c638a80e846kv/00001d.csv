@@ -1,0 +1,19 @@
+"0","library(tensorflow)"
+"0","use_condaenv(""r-tensorflow-compatible"", required = TRUE)"
+"0",""
+"0","library(keras3)  # YOU MIGHT WANT library(keras3)"
+"2","
+Attaching package: ‘keras3’
+
+"
+"2","The following objects are masked from ‘package:tensorflow’:
+
+    set_random_seed, shape
+
+"
+"0","tf$constant(""Hello, TensorFlow!"")"
+"2","2024-11-08 08:59:11.826542: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+"
+"1","tf.Tensor(b'Hello, TensorFlow!', shape=(), dtype=string)
+"

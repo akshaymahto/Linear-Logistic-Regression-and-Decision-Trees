@@ -1,0 +1,345 @@
+---
+title: "Neural Networks"
+output: html_notebook
+---
+
+Activate anaconda virtual environment for keras and tf. Check the basic function by printing "Hello, Tensorflow!"
+```{r}
+library(tensorflow)
+use_condaenv("r-tensorflow-compatible", required = TRUE)
+
+library(keras3)
+tf$constant("Hello, TensorFlow!")
+
+```
+
+NNs for regression: use an ANN to estimate the strength of concrete
+```{r}
+concrete <- read.csv("concrete.csv")
+str(concrete)
+```
+```{r}
+concrete_train <- concrete[1:773,-9]
+train_labels<-concrete[1:773,9]
+concrete_test <- concrete[774:1030,-9]
+test_labels <- concrete[774:1030,9]
+```
+
+Z-score normalization for numeric variables. To avoid data leakage, we use the normalization parameters from training to normalize the testing data.
+```{r}
+concrete_train=scale(concrete_train)
+col_means_train <- attr(concrete_train, "scaled:center") 
+col_stddevs_train <- attr(concrete_train, "scaled:scale")
+
+#avoid data leakage
+concrete_test <- scale(concrete_test, center = col_means_train, scale = col_stddevs_train)
+```
+
+Build models: one hidden layer with 10-neurons and relu activation. functions. Complie the model by specifying the optimizer and loss function.
+```{r}
+library(keras3) 
+model <- keras_model_sequential() %>%
+  layer_dense(units = 10, activation = "relu", input_shape = c(dim(concrete_train)[2])) %>%
+  layer_dense(units = 1)
+
+# Compile the model
+model %>% compile(
+  optimizer = 'adam',
+  loss = 'mse'
+)
+
+model
+```
+Use fit function to train the neural network. One benefit of using keras is that we do not need to write backpropagation learning and gradient descent, fit helps us do all the things. You just specify the training features and labels, the batch size for gradient descent update, the num of epochs for backpropagation learning, and validation/test set for evaluation.
+```{r}
+set.seed(1)
+history <- model %>% fit(concrete_train, 
+  train_labels,
+  batch_size=50,
+  epochs = 500,
+  validation_data=list(concrete_test,test_labels))
+
+```
+
+```{r}
+plot(history)
+```
+Do prediction and check RMSE.
+```{r}
+predictions=model %>% predict(concrete_test)
+rmse= function(x,y){ 
+  return((mean((x - y)^2))^0.5)
+}
+rmse(predictions,test_labels)
+```
+
+NNs for binary classification; predict high-low income level.
+
+```{r}
+adult=read.csv("adult_wt_na.csv")
+str(adult)
+```
+Remove relationship variable
+```{r}
+adult$relationship=NULL
+```
+
+Change income variable to be binary; and remove the original one.
+```{r}
+labels=as.numeric(as.factor(adult[,"income"]))-1
+adult$income=NULL
+labels
+```
+
+Change nominal variable of education to numbers with orders. For other categorical variables with several levels, use one-hot encoding.
+```{r}
+adult$education <- as.numeric(factor(adult$education, levels = c("Preschool", "1st-4th", "5th-6th", "7th-8th", "9th", "10th", "11th", "12th", "HS-grad", "Some-college", "Assoc-voc", "Assoc-acdm", "Bachelors", "Prof-school", "Masters", "Doctorate"), ordered = TRUE))-1
+adult$sex=ifelse(adult$sex=="Male",0,1)
+
+install.packages("mltools")
+library(mltools)
+
+library(data.table)
+
+
+str(adult)
+adult$type_employer <- as.factor(adult$type_employer)
+adult$marital <- as.factor(adult$marital)
+adult$occupation <- as.factor(adult$occupation)
+adult$race <- as.factor(adult$race)
+adult$country <- as.factor(adult$country)
+
+adult= data.frame(one_hot(as.data.table(adult)))
+str(adult)
+```
+
+Split the data into training and testing;
+```{r}
+library(caret)
+in_train=createDataPartition(labels, p=0.85, list=FALSE)
+x_train=adult[in_train,]
+y_train= labels[in_train]
+x_test=adult[-in_train,]
+y_test= labels[-in_train]
+```
+
+Z-score normalization for numeric variables by avoiding data leakage.
+```{r}
+numeric_cols=c("age","fnlwgt","education","capital_gain","capital_loss", "hr_per_week")
+
+col_means_train <- attr(scale(x_train[,numeric_cols]), "scaled:center") 
+col_stddevs_train <- attr( scale(x_train[,numeric_cols]), "scaled:scale")
+
+x_train[numeric_cols]= scale(x_train[numeric_cols])
+x_test[numeric_cols]<- scale(x_test[numeric_cols], center = col_means_train, scale = col_stddevs_train)
+```
+
+Build a two-hidden layer neural network with 16 and 32 neurons, respectively. Specify the loss as binary cross entropy, monitor the accuracy of training and validation, and use the stochastic gradient descent for optimizer.
+
+Binary classification requires the output layer with 1 neuron and sigmoid function.
+```{r}
+library(keras3)
+model <- keras_model_sequential() %>%
+    layer_dense(units = 16, activation = "relu",
+                input_shape = dim(x_train)[2]) %>%
+    layer_dense(units = 32,activation="relu" ) %>%
+    layer_dense(units = 1, activation="sigmoid") 
+
+model %>% compile(
+      loss = "binary_crossentropy",
+        optimizer = "sgd" , metrics="acc")
+
+model
+```
+Plot the training history;
+```{r}
+history <- model %>% fit(as.matrix(x_train), 
+  y_train,
+  batch_size=50,
+   epochs = 20,
+   validation_data=list(as.matrix(x_test), y_test), verbose=2)
+
+```
+ANNs for muti-class classification; directly use keras dataset "fashion mnist", which includes a train set and test set.
+```{r}
+fashion_mnist= dataset_fashion_mnist() 
+str(fashion_mnist)
+```
+```{r}
+str(fashion_mnist$train$y)
+```
+
+The label has been encoded as 0-9.
+```{r}
+unique(fashion_mnist$train$y)
+```
+
+```{r}
+unique(fashion_mnist$test$y)
+```
+
+Qualitatively show some examples from the dataset;
+```{r}
+class_names = c('Tshirt/top','Trouser','Pullover','Dress','Coat', 'Sandal','Shirt','Sneaker','Bag','Ankle boot')
+
+par(mfrow=c(5,5))
+par(mar=c(0, 0, 1.5, 0))
+for (i in 1:25) { 
+       img <- fashion_mnist$train$x [i, , ]
+       img <- t(apply(img, 2, rev)) 
+       image(1:28, 1:28, img, col = gray(seq(0,1,length=255)), xaxt = 'n', yaxt = 'n',main = paste(class_names[fashion_mnist$train$y[i] + 1])) }
+
+```
+Pixels are the features of images, they are numeric values from 0-255; thus dividing by 255 can normalize the pixel values into the range of [0, 1].
+```{r}
+fashion_train= fashion_mnist$train
+fashion_train$x= fashion_train$x/255
+fashion_test= fashion_mnist$test
+fashion_test$x=fashion_test$x/255
+```
+
+Further split the train set into a new training set and validation set for the later stage hyper-parameter tuning.
+```{r}
+fashion_val=list()
+fashion_val$x=fashion_train$x[50001:60000,,]
+fashion_val$y=fashion_train$y[50001:60000]
+fashion_train$x=fashion_train$x[1:50000,,]
+fashion_train$y=fashion_train$y[1:50000]
+```
+
+Build a one-hidden layer neural network; Since originally, our image is a 2-d array with the size of 28 by 28, we cannot directly feed it into the neural network. However, keras has a layer_flatten function which transforms the original 2-d image into 1-d array. You can think of this layer as unstacking rows of pixels in the image and lining them up. This layer has no parameter to learn, just reformats the data from 2d into 1d.
+
+We specify that we use adam for gradient descent, cross_entropy for loss, and monitor the accuracy. “sparse_categorical_crossentropy” loss in keras is used when the class labels are encoded using an integer, similar to the fashion mnist dataset “categorical_crossentropy” loss in keras is used when the class labels are encoded using one-hot-encoding.
+```{r}
+model =keras_model_sequential() 
+model %>%
+    layer_flatten(input_shape = c(28, 28)) %>%
+    layer_dense(units = 128, activation =   'relu') %>%
+    layer_dense(units = 10, activation = 'softmax')
+
+model %>% compile(
+    optimizer = 'adam', 
+    loss = 'sparse_categorical_crossentropy',
+    metrics = c('accuracy'))
+
+model
+```
+Then, we train the neural network with fit by specifying the parameters of batch_size and epochs. 
+
+```{r}
+set.seed(2024)
+model %>% fit(
+     fashion_train$x, fashion_train$y, epochs = 30,       
+     batch_size=32, validation_data=list(fashion_val$x,    
+     fashion_val$y ))
+
+```
+
+We then evaluate the model on the testing set, kind of bad performance since we did finetune the hyperparameters.
+```{r}
+model %>% evaluate(fashion_test$x, fashion_test$y)
+```
+To finetune the hyperparameters of neural networks, we are going to use tfruns, which provides a suite of tools for tracking, visualizing, and managing TensorFlow training runs and experiments from R.
+
+Specifically, we create an R script and name it “fashion_mnist.R”. In fashion_mnist.R script we define a set of flags for hyper-parameters we want to tune and incorporate it into our model configuration. For example, we define a flag for each hyperparameter you want to tune and a default value for that hyperparameter. And we build and compile the model as usual, replacing the constant value for each hyper-parameter you want to tune with its flag. 
+
+Please note that we use a callback function to specify the early stopping. So what’s early stopping and why do we need it. Generally, through the learning curve, we can see how the training and validation loss change. And if we have some situation where your training loss keeps going down, but the validation loss starts going up or stop becoming better. Then this indicates, your model begins overfitting the training data, it becomes so good on the training set, but fails to generalization to the unseen data. Thus, we need to step the training, and early stopping comes into play, where it stops training if validation loss stops improving (decreasing) for a given number of epochs!!!
+
+Pls make sure that “fashion_mnist.R” is in the same directory of your notebook that uses “tuning_run” function.
+
+Here, in total, we can have $$3*4*4*3=144$$ hyper-parameter combinations based on the range we defined for each hyper-parameter. However, since training an ANN is computationally intensive, building this many models on a single CPU machine will take a long time. Therefore, we only take a $$3\%$$ sample of this combination which approximately equates to 5 different combinations for hyper-parameters and therefore, 5 different neural network models.
+
+tuning_run returns a dataframe. Where each row has the path to the directory which contains the summary of the run as well as the training and validation loss and accuracy for each run;
+
+```{r}
+library(tfruns)
+runs <- tuning_run("fashion_mnist.R", 
+                  flags = list(
+                  nodes = c(64, 128, 392),
+                  learning_rate = c(0.01, 0.05, 0.001, 0.0001),                 
+                  batch_size=c(16,32,64,128),
+		              activation=c("relu","sigmoid","tanh")
+                   ),
+                  sample = 0.03)
+
+
+```
+
+You can view the summary of each run using “view_run” function and pass to it the directory of the run you want to view. This opens a new window with a summary of the best run; Then we can find the best set of hyperparamters.
+```{r}
+runs= runs[order(runs$metric_val_loss),]
+runs
+```
+```{r}
+view_run(runs$run_dir[1])
+```
+
+Since, we have found the best hyperparameters, we don’t need the validation data anymore and we can add it back to training data to train the final model on more data. We use abind to do it.
+```{r}
+install.packages("abind")
+library(abind)
+all_train_x = abind(fashion_train$x, fashion_val$x, along=1)
+all_train_y = abind(fashion_train$y, fashion_val$y, along=1)
+str(all_train_x)
+
+```
+
+Then we train a new model on the combined train+validation data using the best hyperparameter found during tuning and evaluate the final model on the test data; 
+```{r}
+model =keras_model_sequential() 
+model %>%
+  layer_flatten(input_shape = c(28, 28)) %>%
+  layer_dense(units = 392, activation = "tanh") %>%
+  layer_dense(units = 10, activation = 'softmax')
+
+model %>% compile(
+  optimizer = optimizer_adam(learning_rate = 0.001), 
+  loss = 'sparse_categorical_crossentropy',
+  metrics = c('accuracy'))
+
+
+model %>% fit(
+  all_train_x, all_train_y, epochs = 30,       
+  batch_size=16)
+```
+
+We significantly get better results compared to previous random hyperparameters. 
+```{r}
+model %>% evaluate(fashion_test$x, fashion_test$y)
+
+```
+```{r}
+predictions=model %>% predict(fashion_test$x)
+predictions[1,]
+```
+```{r}
+which.max(predictions[1,])
+```
+
+```{r}
+class_pred <- apply(predictions, 1, which.max)
+class_pred[1:20]
+
+```
+Finally, we can do visualization to see which test examples we got them wrong.
+```{r}
+par(mfcol=c(5,5))
+par(mar=c(0, 0, 1.5, 0), xaxs='i', yaxs='i')
+for (i in 1:25) { 
+     img <- fashion_test$x[i, , ]
+     img <- t(apply(img, 2, rev)) 
+     predicted_label <- class_pred[i]-1
+     true_label <- fashion_test$y[i]
+     if (predicted_label == true_label) {
+         color <- 'blue' 
+     } else {
+         color <- 'red'
+     }
+   image(1:28, 1:28, img, col = gray((0:255)/255), xaxt = 'n', yaxt = 'n',
+           main = paste(class_names[predicted_label + 1], " (",
+                         class_names[true_label + 1], ")"),
+           col.main = color)
+}
+
+```
+

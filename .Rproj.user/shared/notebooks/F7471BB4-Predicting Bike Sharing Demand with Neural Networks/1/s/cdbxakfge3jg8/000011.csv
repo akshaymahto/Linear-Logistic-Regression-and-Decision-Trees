@@ -1,0 +1,2 @@
+"0","# Remove 'registered' and 'casual' columns"
+"0","bikes <- bikes %>% select(-registered, -casual)"

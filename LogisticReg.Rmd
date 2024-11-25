@@ -1,0 +1,81 @@
+---
+title: "Week 8: Logistic Regression"
+output: html_notebook
+---
+
+The Smarket dataset contains daily percentage returns for the S&P 500 stock index over a period of 5 years (2001 to 2005). It includes variables such as:
+
+Year: The year of the observation.
+Lag1 to Lag5: Percentage returns for the previous five trading days.
+Volume: The volume of shares traded on the given day (in billions).
+Today: The percentage return for the current day.
+Direction: A categorical variable indicating whether the market went up or down on the current day ("Up" or "Down").
+
+
+A percentage return is a measure of the profit or loss of an investment relative to its initial value, expressed as a percentage. It shows how much the value of an asset (like a stock or index) has increased or decreased over a specific period, relative to its starting value.
+
+
+```{r}
+install.packages("ISLR")
+library(ISLR)
+summary(Smarket)
+```
+
+```{r}
+str(Smarket)
+```
+
+
+```{r}
+library(psych)
+pairs.panels(Smarket[-9])
+```
+
+```{r}
+attach(Smarket)
+par(mfcol=c(2,3))   #this line creates a 2*3 plotting window
+plot(Lag1 ~ Direction,main="lag1", col="red")
+plot(Lag2 ~ Direction,main="lag2", col="red")
+plot(Lag3 ~ Direction,main="lag3", col="red")
+plot(Lag4 ~ Direction,main="lag4", col="red")
+plot(Lag5 ~ Direction,main="lag5", col="red")
+plot(Volume ~ Direction,main="Volume", col="red")
+```
+
+since the observations have temporal order, it is not appropriate to do a random split; instead, we use earlier observations to predict future observations
+```{r}
+inTrain=Year<2005  # returns a Boolean vector
+Smarket.train= Smarket[inTrain,]
+Smarket.test= Smarket[!inTrain,]
+dim(Smarket.train)
+```
+
+```{r}
+dim(Smarket.test)
+```
+
+```{r}
+logistic.m = glm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Volume, data=Smarket.train, family = "binomial")
+summary(logistic.m)
+```
+```{r}
+preds = predict(logistic.m, Smarket.test, type="response")
+head(preds)
+```
+
+```{r}
+predicted.label=factor(ifelse(preds>0.5, "Up","Down"))
+t = table(predicted.label, Smarket.test$Direction)
+t
+```
+
+The test error of this model is 51.9% which is makes the model practically useless and worse than a random guess. This is disappointing but not surprising because one would generally not expect to predict the next day return from the previous days’ returns. 
+```{r}
+(t[1,2]+t[2,1])/sum(t)
+```
+
+You can check which level is positive by using $levels(your\_response\_variable)$, the positive class is typically the second level in your response factor. For example, if the output is Output: [1] ``Down'' ``Up'', then ``Up'' is positive
+
+```{r}
+levels(Smarket$Direction)
+```

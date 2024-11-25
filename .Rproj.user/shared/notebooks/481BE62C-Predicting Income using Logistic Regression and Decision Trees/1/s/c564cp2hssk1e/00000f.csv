@@ -1,0 +1,4 @@
+"0","model_lr <- glm(income ~ ., data = train_data, family = ""binomial"")"
+"2","Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred"
+"0","predictions_lr <- predict(model_lr, newdata = test_data, type = ""response"")"
+"0","predicted_labels_lr <- ifelse(predictions_lr > 0.5, ""1"", ""0"")"

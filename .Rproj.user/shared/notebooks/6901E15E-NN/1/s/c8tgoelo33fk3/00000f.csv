@@ -1,0 +1,4 @@
+"0","concrete_train <- concrete[1:773,-9]"
+"0","train_labels<-concrete[1:773,9]"
+"0","concrete_test <- concrete[774:1030,-9]"
+"0","test_labels <- concrete[774:1030,9]"

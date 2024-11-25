@@ -1,0 +1,229 @@
+---
+title: "Week6 Regression"
+output: html_notebook
+---
+
+Simple Linear Regression for sales vs. TV advertising spending
+```{r}
+advertising <- read.csv("Advertising.csv")
+str(advertising)
+```
+The dataset contains four variables: the money that spent on TV, newspaper, or radio ads and the sale in thousand dollars. We want to study the relationship between sales and TV ads.
+
+```{r}
+plot(x = advertising$TV, y = advertising$sales, main = "Scatterplot of Sales Vs. TV ad",
+xlab = "Money spent on TV ad in 1000 dollars",
+ylab = "Sales in 1000 dollars")
+
+```
+
+```{r}
+cor(advertising$TV,advertising$sales)
+```
+
+The formula sales ~ TV means that sales is being modeled as a function of TV advertising spending.
+Use .(periods) to make your model name more readable.
+```{r}
+advertising.lm = lm(sales ~ TV, data=advertising)
+coefficients(advertising.lm)
+```
+sales = 7.03 + 0.048*TV
+
+```{r}
+plot(x = advertising$TV, y = advertising$sales, main = "Scatterplot of Sales Vs. TV ad",
+xlab = "Money spent on TV ad in 1000 dollars",
+ylab = "Sales in 1000 dollars")
+abline(7.03259355,0.04753664,col="red" )
+```
+Multiple Linear Regression: Predict medical expenses based on factors, such as age, sex, bmi, smoker, etc.
+
+```{r}
+insurance <- read.csv("/Users/apple/desktop/ML Assignment 3/insurance.csv", stringsAsFactors = TRUE)
+str(insurance)
+```
+
+By checking the correlations between expenses and the other three factors, we can see the strongest one is between age and expenses.
+```{r}
+cor(insurance[c("age", "bmi", "children", "expenses")])
+```
+
+Create a scatterplot matrix to make correlation easier to spot.
+```{r}
+pairs(insurance[c("age", "bmi", "children", "expenses")])
+# pairs(~age+bmi+children+expenses, data=insurance)
+
+```
+
+Additional information, such as correlation coefficients, and histograms for the distribution of values for each variable.
+
+The scatterplots below the diagonal show the correlation ellipse, the shape of which indicates the correlation strength for each scatterplot. There is a dot at the center of each correlation ellipse that is drawn  at the mean values for the x and y axis variables. The more stretched the ellipse is, the stronger the correlation. An almost perfectly round oval, as with bmi and children, indicates a very weak correlation.
+```{r}
+install.packages("psych")
+library(psych)
+pairs.panels(insurance[c("age", "bmi", "children", "expenses")])
+
+```
+
+Use different stat tests and plots to visualize correlations between two variables.
+```{r}
+plot(insurance$expenses~insurance$sex, col="red")
+```
+
+```{r}
+t.test(insurance$expenses~insurance$sex,
+      alternative="two.sided")
+```
+```{r}
+plot(insurance$expenses~insurance$region, col="blue")
+```
+
+```{r}
+oneway.test(insurance$expenses~insurance$region)
+```
+```{r}
+plot(insurance$expenses~insurance$smoker, col="red")
+```
+
+```{r}
+t.test(insurance$expenses~insurance$smoker,
+      alternative="two.sided")
+```
+If we choose significance level of 1%, there is not a significant variation between mean expense for various levels of “region” and “sex” variables. However, there is a significant difference between mean expense for smokers vs non-smokers. So “smoker” seems to be significantly associated with “expense”
+
+
+myfit <- lm(formula, data)
+where formula describes the model to be fit and data is the data frame containing the data to be used in fitting the model. 
+
+The formula is typically written as
+Y ~ X1 + X2 + … + Xk
+where the ~ separates the dependent variable on the left from the independent variables on the right, and the predictor variables are separated by + signs.
+
+The formula represents the linear regression model:
+$$Y = \beta_0 +  \beta_1 X1 + \beta_2 X2 + … + \beta_k Xk$$
+```{r}
+ins_model <- lm(expenses ~ age + children + bmi + sex  + smoker + region, data = insurance)
+# ins_model <- lm(expenses ~ ., data = insurance) # The “.” character can be used to specify all the features
+ins_model
+
+```
+
+dummy variables: sex-> sexmale; sex:male ==> sexmale = 1; sex:female ==> sexmale = 0
+region-> regionnorthwest, regionsoutheast, and regionsouthwest
+To convert the nominal/factor variables sex and region into numeric (actually Boolean) variables
+
+Since a residual is equal to the true value minus the predicted value, the maximum error of 29981.7 suggests that the model under-predicted expenses by nearly $30,000 for at least one observation. This is the maximum residual error. Dispersion of residuals.
+
+The column labeled Estimate contains the estimated regression coefficients as calculated by ordinary least squares. Theoretically, if a variable’s coefficient is zero then the variable is worthless; it adds nothing to the model. Yet the coefficients shown here are only estimates, and they will never be exactly zero. We therefore ask: Statistically speaking, how likely is it that the true coefficient is zero? That is the purpose of the t statistics and the p-values, which in the summary are labeled (respectively) t value and Pr(>|t|).
+
+```{r}
+summary(ins_model)
+```
+Big p-value is bad because it indicates a high likelihood of insignificance. Variables with large p-values are candidates for elimination.
+
+
+Instead of manually writing the code for cross validation this time, we are going to use the caret package to do cross validation for robust evaluation. 
+```{r}
+library(caret)
+train.control =trainControl(method = "cv", number = 10) # 10-fold CV
+model =train(expenses~.,data = insurance, method = "lm",trControl = train.control)
+print(model)
+
+```
+
+Improve the model: 
+
+1) Converting a numeric variable to a binary indicator; some variable only affects the outcome when it reaches a specific threshold.
+
+2) Adding nonlinear effects: There are two types of nonlineraity: A single variable nonlinearity (polynomials) and interaction between variables.
+```{r}
+insurance$bmi30 <- ifelse(insurance$bmi >= 30, 1, 0)
+insurance$age2 <- insurance$age^2
+ins_model2 <- lm(expenses ~ age + age2 + children + bmi + sex + bmi30*smoker + region, data = insurance)
+summary(ins_model2)
+
+```
+The results show that the nonlinear terms age2 and interaction between bmi30:smokeryes are statistically significant. And R-squared improved!
+
+As we can see the cross validation error as measured by RMSE and MAE are also improved.
+```{r}
+train.control =trainControl(method = "cv", number = 10)
+model <- train(expenses~age+age^2+children+bmi+sex+bmi30*smoker+region,data = insurance,method = "lm",trControl = train.control)
+print(model)
+```
+Stepwise regression is a regression with backward (or forward) selection of variables.
+
+We can use stepwise regression by setting method = "leapBackward“ or “leapForward” in the “train” function of caret package.  These methods requires “leaps” package to be installed.
+```{r}
+install.packages("leaps")
+library(leaps)
+library(caret)
+train.control =trainControl(method = "cv", number = 10)
+step.model <- train(expenses ~., data = insurance,method = "leapBackward",trControl = train.control)
+print(step.model)
+```
+
+```{r}
+summary(step.model$finalModel)
+```
+
+Estimating the quality of wines with regression trees. 11 chemical properties of 4,898 wine samples
+```{r}
+wine <- read.csv("whitewines.csv")
+str(wine)
+```
+
+```{r}
+hist(wine$quality)
+```
+
+```{r}
+wine_train <- wine[1:3750, ]
+wine_test <- wine[3751:4898, ]
+install.packages("rpart") #(recursive partitioning) package
+library(rpart)
+m.rpart <- rpart(quality ~ ., data = wine_train)
+m.rpart
+```
+
+```{r}
+install.packages("rpart.plot")
+library(rpart.plot)
+rpart.plot(m.rpart, digits = 3)
+
+```
+
+```{r}
+p.rpart <- predict(m.rpart, wine_test)
+mean(abs(wine_test$quality-p.rpart)) #MAE
+```
+
+```{r}
+sqrt(mean((wine_test$quality - p.rpart)^2)) #RMSE
+```
+
+Improve performance using model trees
+```{r}
+install.packages("Cubist")
+library(Cubist)
+m.cubist=cubist(x=wine_train[-12], y=wine_train$quality)
+m.cubist
+```
+Instead of predicting the mean of outcome variable for all samples in the leaf node, the model tree creates a multiple linear regression model on the samples in each leaf node to predict the outcome for that node.
+```{r}
+summary(m.cubist)
+```
+
+
+
+
+
+```{r}
+p.cubist <- predict(m.cubist, wine_test)
+MAE=mean(abs(wine_test$quality- p.cubist))
+MAE
+```
+
+```{r}
+RMSE=sqrt(mean((wine_test$quality- p.cubist)^2))
+RMSE
+```

@@ -1,0 +1,173 @@
+---
+title: "Predicting Student Performance"
+author: "akshay"
+date: "2024-10-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```
+1. (0.1 points) Read the dataset into a dataframe. Ensure that you are using a correct delimiter
+to read the data correctly and set the “sep” option in read.csv accordingly.
+```
+```{r}
+# Load the data with the correct delimiter ';'
+studentperformance_data <- read.csv("/Users/apple/desktop/ML Assignment 3/student-mat.csv", sep=";")
+str(studentperformance_data)
+summary(studentperformance_data)
+```
+```
+2. (0.3 points) Explore the dataset. More specifically, answer the following questions:
+– a. Is there any missing values in the dataset?
+– b. Draw a histogram of the target variable “G3” and interpret it.
+```
+```{r}
+sum(is.na(studentperformance_data))
+# Returns TRUE if there are missing values, otherwise FALSE
+hist(studentperformance_data$G3, main="Histogram of Final Grades (G3)", xlab="Final Grade (G3)", col="orange", breaks=10)
+```
+
+
+```
+3. (0.1 points) Split the data into train and test. Use 80% of samples for training and 20% of samples for testing. You can use sample (see what we did in week 6 decision tree code demo train sample < −sample(1000, 800), but you need to adjust 1000 and 800 according to the size of your dataset). Alternatively, you can use createDataPartition method from caret package.
+```
+
+```{r}
+# Set seed for reproducibility
+set.seed(2024)
+
+# Split data
+train_indices <- sample(nrow(studentperformance_data), 0.8 * nrow(studentperformance_data))
+train_data <- studentperformance_data[train_indices, ]
+test_data <- studentperformance_data[-train_indices, ]
+```
+
+
+```
+4. (0 point) Set the random seed: set.seed(2024)
+```
+```{r}
+set.seed(2024)
+
+```
+
+```
+5. (1 point) Use caret package (“trainControl”) to run 10-fold cross validation using linear
+regression method on the train data to predict the “G3” variable. Print the resulting model
+to see the cross validation RMSE. In addition, take a summary of the model and interpret the
+coefficients. Which coefficients are statistically different from zero? What does this mean? (Hint:
+see week 7 code demo, summary(ins model))
+```
+
+```{r}
+library(caret)
+
+# Define training control
+ctrl <- trainControl(method = "cv", number = 10)
+
+# Train linear regression model
+lm_model <- train(G3 ~ ., data = train_data, method = "lm", trControl = ctrl)
+
+# Print model results
+print(lm_model)
+
+# Summary of the model
+summary(lm_model$finalModel)
+```
+
+```
+6. (0 point) Set the random seed again. We need to do this before each training to ensure we
+get the same folds in cross validation. Set.seed(2024) so we can compare the models using their
+cross validation RMSE.
+```
+```{r}
+set.seed(2024)
+# Predictions from the linear regression model on test data
+predictions_linear <- predict(lm_model, newdata = test_data)
+
+# Calculate RMSE for linear regression
+rmse_linear <- sqrt(mean((predictions_linear - test_data$G3)^2))
+print(paste("RMSE for Linear Regression Model on Test Data:", round(rmse_linear, 2)))
+```
+
+```
+7. (1 point) Use caret and leap packages to run a 10-fold cross validation using step wise linear
+regression method with backward selection on the train data. The train method by default uses
+maximum of 4 predictors (features) and reports the best models with 1∼4 predictors. We need
+to change this parameter to consider all predictors. So inside your train function, add the
+following parameter “tuneGrid = data.frame(nvmax = 1:n)”, where n is the number of variables
+you use to predict “G3”. Which model (with how many variables or nvmax) has the lowest
+cross validation RMSE? Take the summary of the final model, which variables are selected in
+the model with the lowest RMSE? (Hint: see “leaps” code section in week 7 code demo)
+``` 
+
+```{r}
+library(leaps)
+library(caret)
+# Define training control
+ctrl <- trainControl(method = "cv", number = 10)
+
+# Train stepwise regression model
+
+step_model <- train(G3 ~ ., data = train_data, method = "leapBackward", 
+                    trControl = ctrl, 
+                    tuneGrid = data.frame(nvmax = 1:min(30, ncol(train_data)-1)))
+# Print model results
+print(step_model)
+
+# Summary of the final model
+summary(step_model$finalModel)
+```
+
+```
+8. (0.5 points) Compare the model you obtained from Q5 and the best model you obtained from
+Q7, which model does better at predicting “G3” based on the cross validation RMSE? Get the
+predictions of this model for the test data and report RMSE on the test data.
+```
+```{r}
+# Assuming lm_model is the model from Q5
+
+# Get predictions for the test data
+predictions <- predict(lm_model, newdata = test_data)
+
+# Calculate RMSE on test data
+test_rmse <- sqrt(mean((test_data$G3 - predictions)^2))
+
+# Print the result
+print(paste("Test RMSE:", round(test_rmse, 4)))
+
+# Compare with cross-validation RMSE from Q5
+cv_rmse <- min(lm_model$results$RMSE)
+print(paste("Cross-validation RMSE:", round(cv_rmse, 4)))
+
+# Plot actual vs predicted values
+plot(test_data$G3, predictions, 
+     main = "Actual vs Predicted G3 Scores",
+     xlab = "Actual G3", ylab = "Predicted G3")
+abline(a = 0, b = 1, col = "red")  # Add a 45-degree line for reference
+```
+

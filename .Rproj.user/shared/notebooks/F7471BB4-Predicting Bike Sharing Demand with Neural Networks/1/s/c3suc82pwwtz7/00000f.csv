@@ -1,0 +1,6 @@
+"0","# Convert categorical variables to factors for one-hot encoding"
+"0","bikes$weather <- as.factor(bikes$weather)"
+"0",""
+"0","# One-hot encode categorical variables"
+"0","bikes <- model.matrix(~ . - 1, data = bikes) %>% as.data.frame()"
+"0",""
